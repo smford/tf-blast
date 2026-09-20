@@ -31,7 +31,7 @@ else
   IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
 
   # Defined code paths that warrant a release
-  CODE_PATHS=("cmd" "pkg" "go.mod" "go.sum" "*.go")
+  CODE_PATHS=("cmd" "pkg" "go.mod" "go.sum" "*.go" "Dockerfile")
 
   # Check if there are any actual code modifications since the latest tag
   CODE_DIFF=$(git diff --name-only "${LATEST_TAG}..HEAD" -- "${CODE_PATHS[@]}" 2>/dev/null || true)
