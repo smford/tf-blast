@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/smford/tf-blast/main/schema/tf-blast.schema.json",
+  "title": "tf-blast Configuration Policy",
+  "description": "Configuration schema for tf-blast policy rules, severity classifications, and blast-radius gates.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON schema reference URI"
+    },
+    "rules": {
+      "type": "object",
+      "description": "Custom risk classification patterns mapped to severity levels",
+      "properties": {
+        "critical": {
+          "type": "array",
+          "description": "Resource type patterns considered CRITICAL risk (e.g. databases, object storage)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "high": {
+          "type": "array",
+          "description": "Resource type patterns considered HIGH risk (e.g. security groups, routing, IAM)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "medium": {
+          "type": "array",
+          "description": "Resource type patterns considered MEDIUM risk (e.g. compute instances, load balancers)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "low": {
+          "type": "array",
+          "description": "Resource type patterns considered LOW risk (e.g. DNS records, tags, alarms)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fail_on": {
+      "type": "string",
+      "description": "Failure threshold that triggers exit code 1 for CI policy enforcement",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "replacement",
+        "any-destroy",
+        ""
+      ]
+    },
+    "max_blast": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum acceptable total blast radius count before failing the policy check (0 disables threshold)"
+    },
+    "max_score": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum acceptable weighted blast score before failing the policy check (0 disables threshold)"
+    },
+    "ignore_resources": {
+      "type": "array",
+      "description": "List of resource address or type patterns to exclude from blast radius calculations",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

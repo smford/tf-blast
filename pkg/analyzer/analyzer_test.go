@@ -217,3 +217,35 @@ func TestAnalyze_DisruptiveInPlaceResize(t *testing.T) {
 		t.Errorf("expected SeverityMedium for instance_type resize, got %s", res.Severity)
 	}
 }
+
+func TestAnalyze_MaxScoreThreshold(t *testing.T) {
+	plan := &parser.Plan{
+		ResourceChanges: []parser.ResourceChange{
+			{
+				Address: "aws_rds_cluster.db",
+				Type:    "aws_rds_cluster",
+				Change: parser.Change{
+					Actions: []string{"delete"},
+				},
+			},
+		},
+	}
+
+	// Critical deletion has risk score: 25 (critical) + 5 (destroy) = 30
+	cfg := config.DefaultConfig()
+	cfg.MaxScore = 20
+	report := Analyze(plan, nil, cfg)
+
+	if !report.Failed {
+		t.Fatalf("expected report to fail when BlastScore (%d) exceeds MaxScore (20)", report.Summary.BlastScore)
+	}
+	if report.Summary.BlastScore < 30 {
+		t.Errorf("expected BlastScore >= 30, got %d", report.Summary.BlastScore)
+	}
+
+	cfg.MaxScore = 50
+	reportPass := Analyze(plan, nil, cfg)
+	if reportPass.Failed {
+		t.Fatalf("expected report to pass when BlastScore is under MaxScore 50")
+	}
+}

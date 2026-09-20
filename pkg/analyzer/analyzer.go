@@ -108,6 +108,9 @@ func Analyze(plan *parser.Plan, g *graph.Graph, cfg *config.Config) *AnalysisRep
 			report.Summary.MaxSeverity = severity
 		}
 
+		riskScore := calculateRiskScore(severity, action, len(downstream), hasDrift)
+		report.Summary.BlastScore += riskScore
+
 		resAnalysis := ResourceAnalysis{
 			Address:            cleanAddr,
 			Type:               rc.Type,
@@ -124,17 +127,21 @@ func Analyze(plan *parser.Plan, g *graph.Graph, cfg *config.Config) *AnalysisRep
 			DriftDetails:       driftDetails,
 			IsSensitive:        isSensitive,
 			PlanSource:         rc.PlanSource,
+			RiskScore:          riskScore,
 			RawChange:          rc,
 		}
 
 		report.Resources = append(report.Resources, resAnalysis)
 	}
 
-	// Sort resources: highest severity first, then highest downstream count, then address
+	// Sort resources: highest severity first, then highest risk score, then address
 	sort.Slice(report.Resources, func(i, j int) bool {
 		r1, r2 := report.Resources[i], report.Resources[j]
 		if severityRank(r1.Severity) != severityRank(r2.Severity) {
 			return severityRank(r1.Severity) > severityRank(r2.Severity)
+		}
+		if r1.RiskScore != r2.RiskScore {
+			return r1.RiskScore > r2.RiskScore
 		}
 		if r1.DownstreamCount != r2.DownstreamCount {
 			return r1.DownstreamCount > r2.DownstreamCount
@@ -143,7 +150,7 @@ func Analyze(plan *parser.Plan, g *graph.Graph, cfg *config.Config) *AnalysisRep
 	})
 
 	report.Summary.TotalBlastRadius = len(allImpactedNodes)
-	report.Summary.PlanHealth = determinePlanHealth(report.Summary.MaxSeverity, report.Summary.TotalBlastRadius, report.Summary.TotalChanges)
+	report.Summary.PlanHealth = determinePlanHealth(report.Summary.MaxSeverity, report.Summary.TotalBlastRadius, report.Summary.BlastScore, report.Summary.TotalChanges)
 
 	// Threshold evaluation
 	evaluateThresholds(report, cfg)
@@ -391,17 +398,43 @@ func severityRank(s Severity) int {
 	}
 }
 
-func determinePlanHealth(maxSev Severity, blastRadius int, totalChanges int) string {
+func calculateRiskScore(severity Severity, action ActionType, downstreamCount int, hasDrift bool) int {
+	if action == ActionNoop || action == ActionRead {
+		return 0
+	}
+	score := 0
+	switch severity {
+	case SeverityCritical:
+		score += 25
+	case SeverityHigh:
+		score += 15
+	case SeverityMedium:
+		score += 5
+	case SeverityLow:
+		score += 1
+	}
+
+	if action == ActionReplace || action == ActionDestroy {
+		score += 5
+	}
+	score += downstreamCount * 2
+	if hasDrift {
+		score += 3
+	}
+	return score
+}
+
+func determinePlanHealth(maxSev Severity, blastRadius int, blastScore int, totalChanges int) string {
 	if totalChanges == 0 {
 		return "CLEAN / NO CHANGES"
 	}
-	if maxSev == SeverityCritical || blastRadius >= 20 {
+	if maxSev == SeverityCritical || blastRadius >= 20 || blastScore >= 100 {
 		return "CRITICAL BLAST RADIUS DETECTED"
 	}
-	if maxSev == SeverityHigh || blastRadius >= 10 {
+	if maxSev == SeverityHigh || blastRadius >= 10 || blastScore >= 50 {
 		return "HIGH BLAST RADIUS DETECTED"
 	}
-	if maxSev == SeverityMedium || blastRadius > 0 {
+	if maxSev == SeverityMedium || blastRadius > 0 || blastScore >= 20 {
 		return "MODERATE BLAST RADIUS DETECTED"
 	}
 	return "LOW RISK / HEALTHY"
@@ -411,6 +444,12 @@ func evaluateThresholds(report *AnalysisReport, cfg *config.Config) {
 	if cfg.MaxBlast > 0 && report.Summary.TotalBlastRadius > cfg.MaxBlast {
 		report.Failed = true
 		report.FailReason = fmt.Sprintf("Blast radius (%d) exceeds maximum acceptable limit (%d)", report.Summary.TotalBlastRadius, cfg.MaxBlast)
+		return
+	}
+
+	if cfg.MaxScore > 0 && report.Summary.BlastScore > cfg.MaxScore {
+		report.Failed = true
+		report.FailReason = fmt.Sprintf("Blast score (%d) exceeds maximum acceptable limit (%d)", report.Summary.BlastScore, cfg.MaxScore)
 		return
 	}
 

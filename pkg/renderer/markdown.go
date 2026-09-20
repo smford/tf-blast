@@ -38,7 +38,7 @@ func RenderMarkdown(w io.Writer, report *analyzer.AnalysisReport) error {
 		report.Summary.ToDestroy,
 		report.Summary.ToReplace,
 	)
-	fmt.Fprintf(w, "**Total Blast Radius:** %d affected resource(s)\n\n", report.Summary.TotalBlastRadius)
+	fmt.Fprintf(w, "**Total Blast Radius:** %d affected resource(s) | **Blast Score:** %d\n\n", report.Summary.TotalBlastRadius, report.Summary.BlastScore)
 	if report.Summary.DriftCount > 0 {
 		fmt.Fprintf(w, "> [!WARNING]\n> **Out-of-Band State Drift Detected:** %d resource(s) were modified directly in the cloud console or drifted from state.\n\n", report.Summary.DriftCount)
 	}

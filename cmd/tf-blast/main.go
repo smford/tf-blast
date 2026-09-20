@@ -24,6 +24,7 @@ var (
 	outFile           string
 	failOn            string
 	maxBlast          int
+	maxScore          int
 	silent            bool
 	showVersion       bool
 	jsonFlag          bool
@@ -141,6 +142,9 @@ report and a GitHub/GitLab-ready Markdown summary for pull requests.`,
 			if maxBlast > 0 {
 				cfg.MaxBlast = maxBlast
 			}
+			if maxScore > 0 {
+				cfg.MaxScore = maxScore
+			}
 
 			// 3. Build Graph & Analyze
 			g := graph.BuildGraph(plan)
@@ -173,6 +177,8 @@ report and a GitHub/GitLab-ready Markdown summary for pull requests.`,
 						fileFormat = "json"
 					} else if strings.HasSuffix(outFile, ".sarif") {
 						fileFormat = "sarif"
+					} else if strings.HasSuffix(outFile, ".html") || strings.HasSuffix(outFile, ".htm") {
+						fileFormat = "html"
 					} else if strings.HasSuffix(outFile, ".mermaid") || strings.HasSuffix(outFile, ".mmd") {
 						fileFormat = "mermaid"
 					}
@@ -210,23 +216,112 @@ report and a GitHub/GitLab-ready Markdown summary for pull requests.`,
 
 	rootCmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to terraform/opentofu JSON plan file (default: stdin)")
 	rootCmd.Flags().StringVarP(&configPath, "config", "c", "", "Optional path to .tf-blast.yaml policy config")
-	rootCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, markdown, json, mermaid, sarif")
-	rootCmd.Flags().StringVar(&outFile, "out-file", "", "Path to write output to (e.g., pr-comment.md, report.sarif)")
+	rootCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, markdown, json, mermaid, sarif, html")
+	rootCmd.Flags().StringVar(&outFile, "out-file", "", "Path to write output to (e.g., pr-comment.md, report.sarif, report.html)")
 	rootCmd.Flags().StringVar(&outFile, "output-file", "", "Alias for --out-file")
 	rootCmd.Flags().StringVar(&failOn, "fail-on", "", `Exit code 1 threshold: "critical", "high", "replacement", "any-destroy"`)
 	rootCmd.Flags().StringVar(&maxSeverity, "max-severity", "", "Exit code 1 threshold based on max severity: critical, high, medium")
 	rootCmd.Flags().BoolVar(&failOnDestroy, "fail-on-destroy", false, "Exit code 1 if any resource is destroyed or replaced")
 	rootCmd.Flags().BoolVar(&failOnReplacement, "fail-on-replacement", false, "Exit code 1 if any resource is replaced")
 	rootCmd.Flags().IntVar(&maxBlast, "max-blast", 0, "Maximum acceptable blast radius before failing (default: 0 = disabled)")
+	rootCmd.Flags().IntVar(&maxScore, "max-score", 0, "Maximum acceptable weighted blast score before failing (default: 0 = disabled)")
 	rootCmd.Flags().BoolVarP(&silent, "silent", "s", false, "Suppress terminal output (useful in CI when only checking exit codes)")
 	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "Print version information")
 	rootCmd.Flags().BoolVar(&jsonFlag, "json", false, "Output in raw JSON format (equivalent to -o json)")
 	rootCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "Launch interactive terminal TUI explorer")
 
 	rootCmd.AddCommand(newCompletionCmd())
+	rootCmd.AddCommand(newDiffCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(2)
+	}
+}
+
+func newDiffCmd() *cobra.Command {
+	var diffOutput string
+	var diffOutFile string
+
+	cmd := &cobra.Command{
+		Use:   "diff [flags] <before-plan.json> <after-plan.json>",
+		Short: "Compare two execution plans and report blast-radius / risk deltas",
+		Long: `Compare a baseline Terraform plan against a revision to evaluate how blast radius,
+resource replacements, and risk scores evolved between commits or iterations.`,
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			f1, err := os.Open(args[0])
+			if err != nil {
+				return fmt.Errorf("error opening before-plan %s: %w", args[0], err)
+			}
+			defer f1.Close()
+			p1, err := parser.ParsePlan(f1)
+			if err != nil {
+				return fmt.Errorf("error parsing before-plan %s: %w", args[0], err)
+			}
+
+			f2, err := os.Open(args[1])
+			if err != nil {
+				return fmt.Errorf("error opening after-plan %s: %w", args[1], err)
+			}
+			defer f2.Close()
+			p2, err := parser.ParsePlan(f2)
+			if err != nil {
+				return fmt.Errorf("error parsing after-plan %s: %w", args[1], err)
+			}
+
+			cfg, _ := config.LoadConfig(configPath)
+			g1 := graph.BuildGraph(p1)
+			r1 := analyzer.Analyze(p1, g1, cfg)
+
+			g2 := graph.BuildGraph(p2)
+			r2 := analyzer.Analyze(p2, g2, cfg)
+
+			diff := analyzer.DiffReports(r1, r2)
+
+			format := strings.ToLower(strings.TrimSpace(diffOutput))
+			if format == "" {
+				format = "terminal"
+			}
+
+			if diffOutFile != "" {
+				outF, err := os.Create(diffOutFile)
+				if err != nil {
+					return fmt.Errorf("error creating output file %s: %w", diffOutFile, err)
+				}
+				defer outF.Close()
+				fileFormat := format
+				if format == "terminal" && strings.HasSuffix(diffOutFile, ".md") {
+					fileFormat = "markdown"
+				} else if format == "terminal" && strings.HasSuffix(diffOutFile, ".json") {
+					fileFormat = "json"
+				}
+				if err := renderDiffReport(outF, fileFormat, diff); err != nil {
+					return err
+				}
+			}
+
+			if !silent {
+				return renderDiffReport(os.Stdout, format, diff)
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVarP(&diffOutput, "output", "o", "terminal", "Output format: terminal, markdown, json")
+	cmd.Flags().StringVar(&diffOutFile, "out-file", "", "Path to write diff output to (e.g. diff.md)")
+	return cmd
+}
+
+func renderDiffReport(w io.Writer, format string, diff *analyzer.DiffReport) error {
+	switch format {
+	case "markdown", "md":
+		return renderer.RenderDiffMarkdown(w, diff)
+	case "json":
+		return renderer.RenderDiffJSON(w, diff)
+	case "terminal":
+		return renderer.RenderDiffTerminal(w, diff)
+	default:
+		return fmt.Errorf("unknown diff format: %s (must be terminal, markdown, or json)", format)
 	}
 }
 
@@ -279,7 +374,9 @@ func renderReport(w io.Writer, format string, report *analyzer.AnalysisReport) e
 		return renderer.RenderMermaid(w, report)
 	case "sarif":
 		return renderer.RenderSARIF(w, report, Version)
+	case "html", "htm":
+		return renderer.RenderHTML(w, report)
 	default:
-		return fmt.Errorf("unknown output format: %s (must be terminal, markdown, json, mermaid, or sarif)", format)
+		return fmt.Errorf("unknown output format: %s (must be terminal, markdown, json, mermaid, sarif, or html)", format)
 	}
 }

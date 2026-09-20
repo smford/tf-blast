@@ -45,6 +45,7 @@ type ResourceAnalysis struct {
 	DriftDetails       string                 `json:"drift_details,omitempty"`
 	IsSensitive        bool                   `json:"is_sensitive,omitempty"`
 	PlanSource         string                 `json:"plan_source,omitempty"`
+	RiskScore          int                    `json:"risk_score"`
 	RawChange          *parser.ResourceChange `json:"-"`
 }
 
@@ -57,6 +58,7 @@ type Summary struct {
 	Unchanged        int      `json:"unchanged"`
 	TotalChanges     int      `json:"total_changes"`
 	TotalBlastRadius int      `json:"total_blast_radius"`
+	BlastScore       int      `json:"blast_score"`
 	DriftCount       int      `json:"drift_count,omitempty"`
 	MaxSeverity      Severity `json:"max_severity"`
 	PlanHealth       string   `json:"plan_health"`

@@ -17,6 +17,10 @@ inputs:
     description: "Maximum acceptable blast radius before failing (0 = disabled)"
     required: false
     default: "0"
+  max-score:
+    description: "Maximum acceptable weighted blast score before failing (0 = disabled)"
+    required: false
+    default: "0"
   config:
     description: "Optional path to .tf-blast.yaml policy configuration"
     required: false
@@ -65,9 +69,53 @@ runs:
         fi
 
         echo "Installing tf-blast..."
-        cd "${{ github.action_path }}"
-        go build -ldflags="-s -w" -o /usr/local/bin/tf-blast ./cmd/tf-blast
-        echo "tf-blast installed successfully: $(tf-blast --version)"
+
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        ARCH=$(uname -m)
+        case "$ARCH" in
+          x86_64) ARCH="amd64" ;;
+          aarch64|arm64) ARCH="arm64" ;;
+        esac
+
+        ACTION_REF="${{ github.action_ref }}"
+        if [ -z "$ACTION_REF" ] || [ "$ACTION_REF" = "main" ]; then
+          DOWNLOAD_URL="https://github.com/smford/tf-blast/releases/latest/download/tf-blast-${OS}-${ARCH}.tar.gz"
+        else
+          DOWNLOAD_URL="https://github.com/smford/tf-blast/releases/download/${ACTION_REF}/tf-blast-${OS}-${ARCH}.tar.gz"
+        fi
+
+        INSTALL_DIR="/usr/local/bin"
+        if [ ! -w "$INSTALL_DIR" ]; then
+          INSTALL_DIR="$HOME/.local/bin"
+          mkdir -p "$INSTALL_DIR"
+          echo "$INSTALL_DIR" >> "$GITHUB_PATH"
+        fi
+
+        INSTALLED=false
+        if command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+          echo "Attempting pre-built binary download from ${DOWNLOAD_URL}..."
+          if curl -sSL --fail "${DOWNLOAD_URL}" -o /tmp/tf-blast.tar.gz 2>/dev/null; then
+            tar -xzf /tmp/tf-blast.tar.gz -C "$INSTALL_DIR" tf-blast 2>/dev/null || tar -xzf /tmp/tf-blast.tar.gz -C "$INSTALL_DIR"
+            chmod +x "${INSTALL_DIR}/tf-blast"
+            rm -f /tmp/tf-blast.tar.gz
+            INSTALLED=true
+            echo "Pre-built binary installed successfully."
+          fi
+        fi
+
+        if [ "$INSTALLED" = "false" ]; then
+          if command -v go >/dev/null 2>&1; then
+            echo "Building tf-blast from source using local Go toolchain..."
+            cd "${{ github.action_path }}"
+            go build -ldflags="-s -w" -o "${INSTALL_DIR}/tf-blast" ./cmd/tf-blast
+            INSTALLED=true
+          else
+            echo "::error::Failed to download pre-built binary and Go compiler is not installed."
+            exit 1
+          fi
+        fi
+
+        echo "tf-blast installed successfully: $("${INSTALL_DIR}/tf-blast" --version)"
 
     - name: Run tf-blast Analysis
       id: run-tf-blast
@@ -80,6 +128,9 @@ runs:
         fi
         if [ "${{ inputs.max-blast }}" -gt 0 ]; then
           CMD_ARGS+=(--max-blast "${{ inputs.max-blast }}")
+        fi
+        if [ "${{ inputs.max-score }}" -gt 0 ]; then
+          CMD_ARGS+=(--max-score "${{ inputs.max-score }}")
         fi
         if [ -n "${{ inputs.config }}" ]; then
           CMD_ARGS+=(--config "${{ inputs.config }}")

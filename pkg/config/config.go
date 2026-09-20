@@ -9,10 +9,11 @@ import (
 
 // Config represents user-defined policies and thresholds.
 type Config struct {
-	Rules           RulesConfig `yaml:"rules"`
-	FailOn          string      `yaml:"fail_on"`
-	MaxBlast        int         `yaml:"max_blast"`
-	IgnoreResources []string    `yaml:"ignore_resources"`
+	Rules           RulesConfig `yaml:"rules" json:"rules"`
+	FailOn          string      `yaml:"fail_on" json:"fail_on"`
+	MaxBlast        int         `yaml:"max_blast" json:"max_blast"`
+	MaxScore        int         `yaml:"max_score" json:"max_score"`
+	IgnoreResources []string    `yaml:"ignore_resources" json:"ignore_resources"`
 }
 
 // RulesConfig defines pattern matchers for severity tiers.
@@ -118,6 +119,9 @@ func LoadConfig(path string) (*Config, error) {
 	}
 	if userCfg.MaxBlast > 0 {
 		cfg.MaxBlast = userCfg.MaxBlast
+	}
+	if userCfg.MaxScore > 0 {
+		cfg.MaxScore = userCfg.MaxScore
 	}
 	if len(userCfg.IgnoreResources) > 0 {
 		cfg.IgnoreResources = userCfg.IgnoreResources

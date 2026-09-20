@@ -104,7 +104,21 @@ tf-blast live/prod/*/plan.json
 tf-blast --fail-on critical --max-blast 30 live/**/*.json
 ```
 
-### 3. Output Formats
+### 3. Differential Plan Comparison (`tf-blast diff`)
+Compare a baseline Terraform plan against a PR revision to verify if modifications resolved destructive risks and reduced blast radius:
+
+```bash
+# Compare previous plan against revision in terminal
+tf-blast diff previous-plan.json new-plan.json
+
+# Generate Markdown comparison for PR review comments
+tf-blast diff -o markdown --out-file pr-diff.md previous-plan.json new-plan.json
+
+# Export machine-readable delta JSON
+tf-blast diff -o json previous-plan.json new-plan.json
+```
+
+### 4. Output Formats
 
 #### Interactive Terminal TUI Mode:
 ```bash
@@ -120,7 +134,7 @@ tf-blast -o terminal plan.json
 ⚠️  Plan Health: HIGH BLAST RADIUS DETECTED
 
 + 0 to add | ~ 3 to update | - 0 to destroy | ± 1 to replace
-Total Blast Radius: 4 resource(s) impacted
+Total Blast Radius: 4 resource(s) impacted  |  Blast Score: 33
 
 SEVERITY    RESOURCE ADDRESS                        ACTION        ROOT CAUSE                  DOWNSTREAM
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -149,7 +163,7 @@ Output preview:
 >
 > **Summary:** `+0` to add | `~3` to update | `-0` to destroy | `±1` to replace
 >
-> **Total Blast Radius:** 4 affected resource(s)
+> **Total Blast Radius:** 4 affected resource(s) | **Blast Score:** 33
 >
 > | Impact Level | Resource Address | Planned Action | Root Cause Attribute | Downstream Affected |
 > | :--- | :--- | :--- | :--- | :--- |
@@ -186,6 +200,12 @@ tf-blast -o sarif --out-file results.sarif plan.json
 ```
 Exports standard OASIS SARIF v2.1.0 diagnostics for automated PR code scanning annotations in GitHub and GitLab.
 
+#### Standalone HTML Audit Report:
+```bash
+tf-blast -o html --out-file audit.html plan.json
+```
+Exports a zero-dependency, self-contained HTML audit artifact with client-side real-time search, severity filtering, and dark/light theme support.
+
 ---
 
 ## Policy & CI Thresholds
@@ -200,6 +220,9 @@ tf-blast --fail-on replacement plan.json
 # Block merge if total blast radius exceeds 15 resources
 tf-blast --max-blast 15 plan.json
 
+# Block merge if weighted blast score exceeds 50 points
+tf-blast --max-score 50 plan.json
+
 # Suppress stdout, exit with code 1 on violation (for CI guardrails)
 tf-blast -s --fail-on high plan.json
 ```
@@ -211,11 +234,12 @@ tf-blast -s --fail-on high plan.json
 | `[plan-file...]` | | One or more Terraform/OpenTofu plan JSON files (multi-plan support) | Standard input (`stdin`) |
 | `--file` | `-f` | Path to Terraform/OpenTofu JSON plan file | Standard input (`stdin`) |
 | `--config` | `-c` | Path to `.tf-blast.yaml` policy configuration | Auto-detect |
-| `--output` | `-o` | Output format (`terminal`, `markdown`, `json`, `mermaid`, `sarif`) | `terminal` |
-| `--out-file` | | Path to write output directly to a file | - |
+| `--output` | `-o` | Output format (`terminal`, `markdown`, `json`, `mermaid`, `sarif`, `html`) | `terminal` |
+| `--out-file` | | Path to write output directly to a file (e.g. `pr-comment.md`, `audit.html`) | - |
 | `--interactive` | `-i` | Launch interactive terminal TUI dashboard | `false` |
 | `--fail-on` | | Exit code 1 threshold (`critical`, `high`, `replacement`, `any-destroy`) | - |
 | `--max-blast` | | Maximum acceptable blast radius before failing | `0` (disabled) |
+| `--max-score` | | Maximum acceptable weighted blast score before failing | `0` (disabled) |
 | `--silent` | `-s` | Suppress terminal output (useful in CI pipelines) | `false` |
 | `--json` | | Shorthand for `--output json` | `false` |
 | `--version` | `-v` | Print version information | - |
@@ -224,9 +248,12 @@ tf-blast -s --fail-on high plan.json
 
 ## Configuration Policy (`.tf-blast.yaml`)
 
-You can define custom risk classification rules, ignored resources, and default thresholds in `.tf-blast.yaml`:
+You can define custom risk classification rules, ignored resources, and default thresholds in `.tf-blast.yaml`. Add the `$schema` directive for real-time validation and autocompletion in VS Code and JetBrains IDEs:
 
 ```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/smford/tf-blast/main/schema/tf-blast.schema.json
+$schema: "https://raw.githubusercontent.com/smford/tf-blast/main/schema/tf-blast.schema.json"
+
 rules:
   critical:
     - "*rds*"
@@ -253,6 +280,7 @@ rules:
 
 fail_on: "critical"
 max_blast: 25
+max_score: 50
 
 ignore_resources:
   - "*null_resource*"
@@ -391,6 +419,8 @@ In addition to the official GitHub Action, `tf-blast` includes ready-to-use temp
 - **Sensitive Value Redaction**: Values marked as sensitive in Terraform plan metadata (`before_sensitive` and `after_sensitive`) or matching sensitive patterns (passwords, tokens, private keys) are automatically sanitized as `(sensitive value redacted)` before rendering into terminal or Markdown outputs.
 - **Out-of-Band State Drift Detection**: Cross-references Terraform's `resource_drift` array to alert engineers when resources scheduled for modification have experienced unmanaged console drift.
 - **Zero Cloud Credentials**: Executes 100% client-side without AWS, GCP, Azure, or remote backend credentials.
+- **Supply Chain Security & Cryptographic Signing**: Release container images published to GitHub Container Registry (`ghcr.io/smford/tf-blast`) are signed keylessly with Sigstore Cosign via GitHub OIDC identity.
+- **Continuous Vulnerability Auditing**: The repository enforces automated weekly Dependabot dependency upgrades and verifies clean dependency trees with `govulncheck`.
 
 ---
 

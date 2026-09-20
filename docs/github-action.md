@@ -67,6 +67,7 @@ jobs:
 | `plan-file` | Path to the Terraform/OpenTofu JSON plan file. Supports single files (e.g. `plan.json`) or space-separated paths (e.g. `vpc/plan.json db/plan.json`). | **Yes** | - |
 | `fail-on` | Failure threshold that causes the action step to exit with code 1: `critical`, `high`, `replacement`, or `any-destroy`. | No | `""` (disabled) |
 | `max-blast` | Maximum acceptable blast radius before failing the workflow. | No | `0` (disabled) |
+| `max-score` | Maximum acceptable weighted blast score before failing the workflow. | No | `0` (disabled) |
 | `config` | Optional custom path to `.tf-blast.yaml` policy configuration file. | No | Auto-detect |
 | `out-file` | Path to write the Markdown report summary to. | No | `pr-comment.md` |
 | `sarif-file` | Path to write the OASIS SARIF v2.1.0 report to for GitHub Code Scanning. | No | `""` |

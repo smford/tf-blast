@@ -154,3 +154,23 @@ func TestRenderSARIF(t *testing.T) {
 		t.Errorf("missing rds cluster in SARIF results: %s", out)
 	}
 }
+
+func TestRenderHTML(t *testing.T) {
+	report := sampleReport()
+	var buf bytes.Buffer
+
+	if err := RenderHTML(&buf, report); err != nil {
+		t.Fatalf("unexpected error rendering HTML: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "<!DOCTYPE html>") {
+		t.Errorf("missing DOCTYPE in HTML output")
+	}
+	if !strings.Contains(out, "aws_rds_cluster.primary") {
+		t.Errorf("missing rds cluster in HTML output")
+	}
+	if !strings.Contains(out, "Blast Score") {
+		t.Errorf("missing Blast Score in HTML output")
+	}
+}

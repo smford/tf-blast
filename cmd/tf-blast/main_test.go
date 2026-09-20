@@ -256,3 +256,61 @@ func TestCLI_MultiPlanAggregation(t *testing.T) {
 		t.Errorf("expected resources from both plans with plan_source annotated, foundPlan1=%v foundPlan2=%v", foundPlan1, foundPlan2)
 	}
 }
+
+func TestCLI_HTMLOutput(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--output", "html", filepath.Join("..", "..", "testdata", "clean-plan.json"))
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to run with --output html: %v", err)
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "<!DOCTYPE html>") {
+		t.Errorf("expected HTML output, got: %s", out)
+	}
+	if !strings.Contains(out, "tf-blast") {
+		t.Errorf("expected tf-blast header in HTML output: %s", out)
+	}
+}
+
+func TestCLI_MaxScoreThreshold(t *testing.T) {
+	// replacement-plan has security group replace + compute updates (score >= 20)
+	cmd := exec.Command(binaryPath, "--max-score", "5", filepath.Join("..", "..", "testdata", "replacement-plan.json"))
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err == nil {
+		t.Fatalf("expected exit code 1 when blast score exceeds max-score 5, but got exit 0")
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "Policy Check FAILED") {
+		t.Errorf("expected policy failure in output: %s", out)
+	}
+}
+
+func TestCLI_DiffCommand(t *testing.T) {
+	plan1 := filepath.Join("..", "..", "testdata", "replacement-plan.json")
+	plan2 := filepath.Join("..", "..", "testdata", "clean-plan.json")
+
+	cmd := exec.Command(binaryPath, "diff", plan1, plan2)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("diff command failed: %v, stderr: %s", err, stderr.String())
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "Plan Comparison & Risk Delta") {
+		t.Errorf("expected diff header in output: %s", out)
+	}
+	if !strings.Contains(out, "Mitigated / Resolved Risks") {
+		t.Errorf("expected resolved risks in output: %s", out)
+	}
+}

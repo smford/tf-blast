@@ -70,6 +70,10 @@ lint:
 tidy:
 	$(GO) mod tidy
 
+## vulncheck: Run govulncheck for known Go security vulnerabilities
+vulncheck:
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
 ## build-all: Cross-compile binaries for Linux, macOS, and Windows into dist/
 build-all: clean
 	@mkdir -p $(BUILD_DIR)

@@ -46,7 +46,7 @@ func RenderTerminal(w io.Writer, report *analyzer.AnalysisReport) error {
 		magenta("±"), report.Summary.ToReplace,
 	)
 	fmt.Fprintln(w, metrics)
-	fmt.Fprintf(w, "%s %d resource(s) impacted", gray("Total Blast Radius:"), report.Summary.TotalBlastRadius)
+	fmt.Fprintf(w, "%s %d resource(s) impacted  %s  %s %d", gray("Total Blast Radius:"), report.Summary.TotalBlastRadius, gray("|"), gray("Blast Score:"), report.Summary.BlastScore)
 	if report.Summary.DriftCount > 0 {
 		fmt.Fprintf(w, "  %s %s", gray("|"), yellow(fmt.Sprintf("⚠️  %d resource(s) with out-of-band drift", report.Summary.DriftCount)))
 	}

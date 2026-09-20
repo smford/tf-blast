@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write
 
 jobs:
   release:
@@ -34,6 +35,10 @@ jobs:
       - name: Run Test Suite
         run: |
           go test -v ./...
+
+      - name: Run Go Vulnerability Check
+        run: |
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
       - name: Calculate Semantic Version
         id: semver
@@ -124,4 +129,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ steps.semver.outputs.version }}
+
+      - name: Install Cosign
+        if: steps.semver.outputs.is_new_version == 'true'
+        uses: sigstore/cosign-installer@v3.8.1
+
+      - name: Sign Container Images with Sigstore Cosign
+        if: steps.semver.outputs.is_new_version == 'true'
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          for tag in ${TAGS}; do
+            echo "Signing container image with Cosign: ${tag}"
+            cosign sign --yes "${tag}"
+          done
 
