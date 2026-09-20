@@ -9,7 +9,7 @@ GO          ?= go
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "1.0.0")
 COMMIT      ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE        ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS     := -s -w -X main.Version=$(VERSION)
+LDFLAGS     := -s -w -X main.Version=$(VERSION) -X main.CommitSHA=$(COMMIT)
 
 .PHONY: all help build install clean test test-unit test-cli bench fmt lint tidy build-all test-fixtures
 

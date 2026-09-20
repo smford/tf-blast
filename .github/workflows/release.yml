@@ -72,9 +72,10 @@ jobs:
         if: steps.semver.outputs.is_new_version == 'true'
         env:
           VERSION: ${{ steps.semver.outputs.version }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           chmod +x scripts/build-release.sh
-          ./scripts/build-release.sh "${VERSION}"
+          ./scripts/build-release.sh "${VERSION}" "${COMMIT_SHA:0:7}"
 
       - name: Publish GitHub Release
         if: steps.semver.outputs.is_new_version == 'true'
@@ -195,6 +196,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ steps.semver.outputs.version }}
+            COMMIT_SHA=${{ github.sha }}
 
       - name: Install Cosign
         if: steps.semver.outputs.is_new_version == 'true'

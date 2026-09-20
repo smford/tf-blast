@@ -314,3 +314,33 @@ func TestCLI_DiffCommand(t *testing.T) {
 		t.Errorf("expected resolved risks in output: %s", out)
 	}
 }
+
+func TestCLI_VersionFlag(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--version")
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to run with --version: %v", err)
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "tf-blast version") {
+		t.Errorf("expected 'tf-blast version' in output, got: %s", out)
+	}
+}
+
+func TestCLI_VersionCommand(t *testing.T) {
+	cmd := exec.Command(binaryPath, "version")
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to run 'tf-blast version': %v", err)
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "tf-blast version") {
+		t.Errorf("expected 'tf-blast version' in output, got: %s", out)
+	}
+}

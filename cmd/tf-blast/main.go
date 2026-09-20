@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,7 +17,8 @@ import (
 )
 
 var (
-	Version = "1.0.0"
+	Version   = "1.0.0"
+	CommitSHA = ""
 
 	filePath          string
 	configPath        string
@@ -48,7 +50,7 @@ report and a GitHub/GitLab-ready Markdown summary for pull requests.`,
 		Args:          cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if showVersion {
-				fmt.Printf("tf-blast version %s\n", Version)
+				fmt.Println(getVersionString())
 				return nil
 			}
 
@@ -232,9 +234,45 @@ report and a GitHub/GitLab-ready Markdown summary for pull requests.`,
 
 	rootCmd.AddCommand(newCompletionCmd())
 	rootCmd.AddCommand(newDiffCmd())
+	rootCmd.AddCommand(newVersionCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(2)
+	}
+}
+
+func getVersionString() string {
+	v := Version
+	if !strings.HasPrefix(v, "v") && v != "dev" {
+		v = "v" + v
+	}
+	sha := CommitSHA
+	if sha == "" || sha == "none" || sha == "unknown" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			for _, setting := range info.Settings {
+				if setting.Key == "vcs.revision" {
+					sha = setting.Value
+					break
+				}
+			}
+		}
+	}
+	if sha != "" && sha != "none" && sha != "unknown" {
+		if len(sha) > 7 {
+			sha = sha[:7]
+		}
+		return fmt.Sprintf("tf-blast version %s (commit: %s)", v, sha)
+	}
+	return fmt.Sprintf("tf-blast version %s", v)
+}
+
+func newVersionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print the tf-blast version and commit SHA",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(getVersionString())
+		},
 	}
 }
 

@@ -6,12 +6,13 @@ set -euo pipefail
 
 VERSION="${1:-1.0.0}"
 VERSION_NO_V="${VERSION#v}"
+COMMIT_SHA="${2:-$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")}"
 DIST_DIR="dist"
 
 rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 
-LDFLAGS="-s -w -X main.Version=${VERSION}"
+LDFLAGS="-s -w -X main.Version=${VERSION} -X main.CommitSHA=${COMMIT_SHA}"
 
 TARGETS=(
   "darwin/amd64"

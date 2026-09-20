@@ -13,7 +13,8 @@ COPY . .
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=dev
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w -X main.Version=${VERSION}" -o /tf-blast ./cmd/tf-blast
+ARG COMMIT_SHA=none
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w -X main.Version=${VERSION} -X main.CommitSHA=${COMMIT_SHA}" -o /tf-blast ./cmd/tf-blast
 
 # Runtime Stage: Distroless Static Debian 12 (zero-trust, minimal attack surface, non-root)
 FROM gcr.io/distroless/static-debian12:nonroot
