@@ -56,3 +56,40 @@ ignore_resources:
 		t.Errorf("unexpected ignore_resources: %v", cfg.IgnoreResources)
 	}
 }
+
+func TestDefaultTemplate_ValidConfig(t *testing.T) {
+	tmpfile, err := os.CreateTemp("", "tf-blast-template-*.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write([]byte(DefaultTemplate)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadConfig(tmpfile.Name())
+	if err != nil {
+		t.Fatalf("failed to load DefaultTemplate: %v", err)
+	}
+
+	if cfg.FailOn != "critical" {
+		t.Errorf("expected fail_on 'critical', got '%s'", cfg.FailOn)
+	}
+	if cfg.MaxBlast != 25 {
+		t.Errorf("expected max_blast 25, got %d", cfg.MaxBlast)
+	}
+	if cfg.MaxScore != 50 {
+		t.Errorf("expected max_score 50, got %d", cfg.MaxScore)
+	}
+	if len(cfg.Rules.Critical) == 0 {
+		t.Errorf("expected critical rules in DefaultTemplate")
+	}
+	if len(cfg.IgnoreResources) == 0 {
+		t.Errorf("expected ignore_resources in DefaultTemplate")
+	}
+}
+

@@ -322,6 +322,11 @@ tf-blast analyze --fail-on critical,replace --max-score 50 tfplan.json</code></p
               <td><code>tf-blast analyze tfplan.json</code></td>
             </tr>
             <tr>
+              <td><code>tf-blast init [path] [flags]</code></td>
+              <td>Initialize a starter <code>.tf-blast.yaml</code> policy configuration with official JSON schema.</td>
+              <td><code>tf-blast init</code></td>
+            </tr>
+            <tr>
               <td><code>tf-blast diff [flags] &lt;before.json&gt; &lt;after.json&gt;</code></td>
               <td>Compare two plan snapshots to calculate resolved and newly introduced blast risks.</td>
               <td><code>tf-blast diff plan_old.json plan_new.json</code></td>
@@ -813,6 +818,25 @@ tf-blast analyze --output html --out-file report.html tfplan.json
       <p class="section-desc">
         Customize risk classifications, blast radius scoring rules, and CI gates via <code>.tf-blast.yaml</code> with full IDE auto-completion.
       </p>
+      <div style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 0.5rem;">Generate Starter Policy Configuration</h3>
+        <p>Scaffold a production-ready <code>.tf-blast.yaml</code> file with the official JSON schema directive and commented defaults:</p>
+        <div class="code-window">
+          <div class="code-header">
+            <span class="code-title">Terminal</span>
+            <button class="copy-btn" data-target="code-sample-init">Copy</button>
+          </div>
+          <pre><code id="code-sample-init"># Initialize .tf-blast.yaml in current directory
+tf-blast init
+
+# Overwrite existing configuration safely
+tf-blast init --force
+
+# Scaffold to a custom path or print to stdout
+tf-blast init --out .github/policies/blast.yaml
+tf-blast init --stdout</code></pre>
+        </div>
+      </div>
 
       <div class="code-window">
         <div class="code-header">

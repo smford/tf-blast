@@ -258,7 +258,25 @@ tf-blast -s --fail-on high plan.json
 
 ## Configuration Policy (`.tf-blast.yaml`)
 
-You can define custom risk classification rules, ignored resources, and default thresholds in `.tf-blast.yaml`. Add the `$schema` directive for real-time validation and autocompletion in VS Code and JetBrains IDEs:
+You can define custom risk classification rules, ignored resources, and default thresholds in `.tf-blast.yaml`.
+
+### Generating Starter Configuration (`tf-blast init`)
+
+Generate a standard, well-annotated `.tf-blast.yaml` policy configuration file with the official JSON schema directive:
+
+```bash
+# Generate .tf-blast.yaml in the current working directory
+tf-blast init
+
+# Overwrite existing configuration safely
+tf-blast init --force
+
+# Write to a custom path or print directly to stdout
+tf-blast init --out .github/policies/blast.yaml
+tf-blast init --stdout
+```
+
+Add the `$schema` directive for real-time validation and autocompletion in VS Code and JetBrains IDEs:
 
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/smford/tf-blast/main/schema/tf-blast.schema.json

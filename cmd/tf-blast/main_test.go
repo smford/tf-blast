@@ -344,3 +344,127 @@ func TestCLI_VersionCommand(t *testing.T) {
 		t.Errorf("expected 'tf-blast version' in output, got: %s", out)
 	}
 }
+
+func TestCLI_InitDefault(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tf-blast-init-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	cmd := exec.Command(binaryPath, "init")
+	cmd.Dir = tempDir
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to run 'tf-blast init': %v, stderr: %s", err, stderr.String())
+	}
+
+	expectedFile := filepath.Join(tempDir, ".tf-blast.yaml")
+	content, err := os.ReadFile(expectedFile)
+	if err != nil {
+		t.Fatalf("expected .tf-blast.yaml to be created: %v", err)
+	}
+
+	if !strings.Contains(string(content), "$schema") {
+		t.Errorf("expected generated file to contain $schema directive")
+	}
+	if !strings.Contains(string(content), "rules:") {
+		t.Errorf("expected generated file to contain rules section")
+	}
+}
+
+func TestCLI_InitExistingFile_FailsWithoutForce(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tf-blast-init-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	cfgPath := filepath.Join(tempDir, ".tf-blast.yaml")
+	if err := os.WriteFile(cfgPath, []byte("existing"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(binaryPath, "init")
+	cmd.Dir = tempDir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err == nil {
+		t.Fatalf("expected 'tf-blast init' to fail when file already exists without --force")
+	}
+
+	if !strings.Contains(stderr.String(), "already exists; use --force to overwrite") {
+		t.Errorf("expected overwrite error message, got: %s", stderr.String())
+	}
+}
+
+func TestCLI_InitExistingFile_SucceedsWithForce(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tf-blast-init-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	cfgPath := filepath.Join(tempDir, ".tf-blast.yaml")
+	if err := os.WriteFile(cfgPath, []byte("existing"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(binaryPath, "init", "--force")
+	cmd.Dir = tempDir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("expected 'tf-blast init --force' to succeed: %v, stderr: %s", err, stderr.String())
+	}
+
+	content, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) == "existing" {
+		t.Errorf("expected file to be overwritten")
+	}
+}
+
+func TestCLI_InitCustomPath(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tf-blast-init-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	target := filepath.Join(tempDir, "sub", "custom-rules.yaml")
+	cmd := exec.Command(binaryPath, "init", target)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to run 'tf-blast init custom': %v, stderr: %s", err, stderr.String())
+	}
+
+	if _, err := os.Stat(target); err != nil {
+		t.Fatalf("expected file to be created at custom path: %v", err)
+	}
+}
+
+func TestCLI_InitStdout(t *testing.T) {
+	cmd := exec.Command(binaryPath, "init", "--stdout")
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to run 'tf-blast init --stdout': %v", err)
+	}
+
+	out := stdout.String()
+	if !strings.Contains(out, "$schema") || !strings.Contains(out, "rules:") {
+		t.Errorf("expected stdout to contain starter template, got: %s", out)
+	}
+}

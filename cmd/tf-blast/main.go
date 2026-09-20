@@ -237,8 +237,10 @@ report and a GitHub/GitLab-ready Markdown summary for pull requests.`,
 	rootCmd.AddCommand(newCompletionCmd())
 	rootCmd.AddCommand(newDiffCmd())
 	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(newInitCmd())
 
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(2)
 	}
 }
