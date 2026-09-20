@@ -118,6 +118,45 @@ jobs:
           git commit -m "chore(docs): update website release version to ${VERSION} [skip ci]" || true
           git push origin main || true
 
+      - name: Generate and Publish Homebrew Formula
+        if: steps.semver.outputs.is_new_version == 'true'
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAG_NAME: ${{ steps.semver.outputs.version }}
+          VERSION: ${{ steps.semver.outputs.version_number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x scripts/generate_formula.sh
+          ./scripts/generate_formula.sh "$VERSION" "$TAG_NAME" "dist" "Formula/tf-blast.rb"
+
+          # Upload formula asset to GitHub release
+          gh release upload "$TAG_NAME" Formula/tf-blast.rb --clobber
+
+          # Commit updated formula to tf-blast repository
+          git add Formula/tf-blast.rb
+          git commit -m "chore(formula): update Homebrew formula to ${TAG_NAME} [skip ci]" || true
+          git push origin main || true
+
+          # Publish to smford/homebrew-tap if HOMEBREW_TAP_TOKEN is configured
+          if [ -n "${TAP_TOKEN}" ]; then
+            echo "Publishing updated formula to smford/homebrew-tap..."
+            git clone "https://x-access-token:${TAP_TOKEN}@github.com/smford/homebrew-tap.git" tap_repo
+            mkdir -p tap_repo/Formula
+            cp Formula/tf-blast.rb tap_repo/Formula/tf-blast.rb
+            cd tap_repo
+            git add Formula/tf-blast.rb
+            if git commit -m "feat(formula): update tf-blast to ${TAG_NAME}"; then
+              git push origin main
+              echo "Successfully pushed formula update to smford/homebrew-tap"
+            else
+              echo "Formula in tap is already up to date"
+            fi
+            cd ..
+            rm -rf tap_repo
+          else
+            echo "HOMEBREW_TAP_TOKEN secret is not set. Formula uploaded to release assets and local repo."
+          fi
+
       - name: Set up QEMU
         if: steps.semver.outputs.is_new_version == 'true'
         uses: docker/setup-qemu-action@v3
