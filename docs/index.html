@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tf-blast | Terraform Blast Radius Analyzer</title>
+  <meta name="description" content="Instant, dependency-aware blast radius and risk intelligence for Terraform and OpenTofu plans. Prevent destructive outages before applying.">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="alternate icon" type="image/png" href="assets/icon.png">
+
+  <!-- Prevent FOUC for theme preferences -->
+  <script>
+    {
+      const savedTheme = localStorage.getItem('color-scheme');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const meta = document.querySelector('meta[name="color-scheme"]');
+        if (meta) meta.content = savedTheme;
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="#" class="brand">
+        <div class="brand-icon">
+          <img src="assets/logo.svg" alt="tf-blast icon" width="36" height="36">
+        </div>
+        <span class="brand-title">tf-blast</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#quickstart">Quick Start</a>
+        <a href="#cli">CLI Tool</a>
+        <a href="#docker">Docker</a>
+        <a href="#github-action">GitHub Action</a>
+        <a href="#reports">Reports</a>
+        <a href="#config">Configuration</a>
+        <a href="#releases">Releases</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="https://github.com/smford/tf-blast/releases" class="version-pill" data-release-url target="_blank" rel="noopener">
+          <span class="pulse-dot"></span>
+          <span data-version>v1.0.0</span>
+        </a>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle color theme" title="Toggle Theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="https://github.com/smford/tf-blast" class="btn-secondary" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge-wrap">
+        <div class="hero-pill">
+          <span class="badge-success">Release <span data-version>v1.0.0</span></span>
+          <span>Zero external telemetry • Sub-500ms execution • Dependency-aware</span>
+        </div>
+      </div>
+
+      <h1 class="hero-title">
+        Terraform Blast Radius Analyzer
+      </h1>
+
+      <p class="hero-subtitle">
+        Instant, dependency-aware blast radius and risk intelligence for Terraform and OpenTofu plans.
+        Detect cascading outages, disruptive replacements, and state drift before applying.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#quickstart" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Get Started
+        </a>
+        <a href="#cli" class="btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+          CLI Reference
+        </a>
+        <a href="#github-action" class="btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+          GitHub Action
+        </a>
+      </div>
+
+      <!-- Quick Install Box -->
+      <div class="install-widget">
+        <div class="install-tabs">
+          <button class="install-tab active" data-tool="curl">Curl / Bash</button>
+          <button class="install-tab" data-tool="go">Go Install</button>
+          <button class="install-tab" data-tool="docker">Docker</button>
+          <button class="install-tab" data-tool="action">GitHub Action</button>
+        </div>
+        <div class="install-box">
+          <div class="install-cmd" id="install-cmd-text">curl -sSL https://raw.githubusercontent.com/smford/tf-blast/main/install.sh | bash</div>
+          <button class="copy-btn" id="install-copy-btn" data-copy="curl -sSL https://raw.githubusercontent.com/smford/tf-blast/main/install.sh | bash">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero Showcase (Visual Screenshot) -->
+      <div class="showcase-wrapper">
+        <div class="window-header">
+          <div class="window-dots">
+            <span class="window-dot dot-red"></span>
+            <span class="window-dot dot-yellow"></span>
+            <span class="window-dot dot-green"></span>
+          </div>
+          <div class="window-title">tf-blast — Terminal Tree & Standalone HTML Audit Dashboard</div>
+        </div>
+        <img src="assets/dashboard.png" alt="tf-blast terminal tree and interactive HTML audit report" class="showcase-image" width="1920" height="1080">
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Highlights -->
+  <section class="highlights-section" id="overview">
+    <div class="container">
+      <div class="section-tag">Key Capabilities</div>
+      <h2 class="section-heading">Engineered for Safe Infrastructure Delivery</h2>
+      <p class="section-desc">
+        Traditional tools stop at resource counts. tf-blast maps the Directed Acyclic Graph (DAG) to expose cascading impacts and protect production.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          </div>
+          <h3 class="card-title">Multi-Hop Blast Graph</h3>
+          <p class="card-text">
+            Builds a comprehensive dependency graph merging direct references, state dependencies, and implicit linkages. Reveals how a single subnet change cascades across 20+ services.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <h3 class="card-title">Weighted Blast Scoring</h3>
+          <p class="card-text">
+            Replaces arbitrary gut checks with mathematical risk scores based on severity (Critical: 25, High: 15), destructive actions (+5), cascading radius (+2), and out-of-band drift (+3).
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </div>
+          <h3 class="card-title">Standalone HTML Reports</h3>
+          <p class="card-text">
+            Generates fully self-contained HTML audit reports with zero external CDN dependencies, light/dark themes, instant client-side search, severity filters, and cascading impact trees.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+          </div>
+          <h3 class="card-title">Differential Plan Comparison</h3>
+          <p class="card-text">
+            Compare two plan runs using <code>tf-blast diff</code>. Pinpoint whether your refactoring resolved existing blast radius risks or inadvertently introduced new destructive changes.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </div>
+          <h3 class="card-title">Terragrunt & Monorepo Multi-Plan</h3>
+          <p class="card-text">
+            Analyze multiple module plans in a single execution. Aggregates dependencies across root modules to detect cross-stack breaking changes and unified risk scores.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <h3 class="card-title">Air-Gapped & Zero-Trust</h3>
+          <p class="card-text">
+            100% local execution. Zero network calls, zero telemetry, zero analytics. Sensitive passwords, tokens, and private keys in Terraform plans are automatically redacted.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start Section -->
+  <section class="doc-section" id="quickstart">
+    <div class="container">
+      <div class="section-tag">Getting Started</div>
+      <h2 class="section-heading">Quick Start Guide</h2>
+      <p class="section-desc">
+        Start analyzing blast radii in four straightforward steps.
+      </p>
+
+      <div class="step-list">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3 class="step-title">Generate Terraform JSON Plan</h3>
+            <p>tf-blast operates on standard Terraform or OpenTofu plan JSON exports:</p>
+            <div class="code-window">
+              <div class="code-header">
+                <span class="code-title">Terminal</span>
+                <button class="copy-btn" data-target="cmd-step-1">Copy</button>
+              </div>
+              <pre><code id="cmd-step-1"># Create binary execution plan
+terraform plan -out=tfplan.binary
+
+# Export to standard JSON
+terraform show -json tfplan.binary > tfplan.json</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3 class="step-title">Run Blast Radius Analysis</h3>
+            <p>Execute tf-blast directly against the JSON plan:</p>
+            <div class="code-window">
+              <div class="code-header">
+                <span class="code-title">Terminal</span>
+                <button class="copy-btn" data-target="cmd-step-2">Copy</button>
+              </div>
+              <pre><code id="cmd-step-2"># Terminal output with color-coded risk paths
+tf-blast analyze tfplan.json</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3 class="step-title">Generate Standalone HTML Audit Report</h3>
+            <p>Export a full visual report for architectural reviews or compliance audits:</p>
+            <div class="code-window">
+              <div class="code-header">
+                <span class="code-title">Terminal</span>
+                <button class="copy-btn" data-target="cmd-step-3">Copy</button>
+              </div>
+              <pre><code id="cmd-step-3">tf-blast analyze --output html --out-file report.html tfplan.json
+open report.html</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3 class="step-title">Enforce CI/CD Policy Gates</h3>
+            <p>Fail your CI pipeline if dangerous modifications or blast thresholds are exceeded:</p>
+            <div class="code-window">
+              <div class="code-header">
+                <span class="code-title">Terminal</span>
+                <button class="copy-btn" data-target="cmd-step-4">Copy</button>
+              </div>
+              <pre><code id="cmd-step-4"># Block merge on critical resources, replacements, or score > 50
+tf-blast analyze --fail-on critical,replace --max-score 50 tfplan.json</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLI Reference Section -->
+  <section class="doc-section" id="cli">
+    <div class="container">
+      <div class="section-tag">Command Line Interface</div>
+      <h2 class="section-heading">CLI Tool In-Depth</h2>
+      <p class="section-desc">
+        Full reference for command syntax, flags, piping, and differential comparison.
+      </p>
+
+      <h3 style="margin: 1.5rem 0 0.5rem;">Commands</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>Description</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>tf-blast analyze [flags] &lt;plan.json...&gt;</code></td>
+              <td>Analyze one or more Terraform plan JSON files or piped stdin.</td>
+              <td><code>tf-blast analyze tfplan.json</code></td>
+            </tr>
+            <tr>
+              <td><code>tf-blast diff [flags] &lt;before.json&gt; &lt;after.json&gt;</code></td>
+              <td>Compare two plan snapshots to calculate resolved and newly introduced blast risks.</td>
+              <td><code>tf-blast diff plan_old.json plan_new.json</code></td>
+            </tr>
+            <tr>
+              <td><code>tf-blast completion [bash|zsh|fish]</code></td>
+              <td>Generate shell autocompletion script.</td>
+              <td><code>source &lt;(tf-blast completion zsh)</code></td>
+            </tr>
+            <tr>
+              <td><code>tf-blast version</code></td>
+              <td>Display the installed binary version and build metadata.</td>
+              <td><code>tf-blast version</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">CLI Flags Reference</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Flag</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>--output, -o</code></td>
+              <td>string</td>
+              <td><code>terminal</code></td>
+              <td>Output format: <code>terminal</code>, <code>markdown</code>, <code>html</code>, <code>json</code>, <code>mermaid</code>, <code>sarif</code>.</td>
+            </tr>
+            <tr>
+              <td><code>--out-file</code></td>
+              <td>string</td>
+              <td><code>""</code></td>
+              <td>File path to write report output to (e.g. <code>report.html</code>, <code>blast.sarif</code>).</td>
+            </tr>
+            <tr>
+              <td><code>--fail-on</code></td>
+              <td>string</td>
+              <td><code>""</code></td>
+              <td>Comma-separated violation thresholds to exit 1: <code>critical</code>, <code>high</code>, <code>medium</code>, <code>replace</code>, <code>delete</code>.</td>
+            </tr>
+            <tr>
+              <td><code>--max-blast</code></td>
+              <td>int</td>
+              <td><code>0</code></td>
+              <td>Maximum allowed blast radius count. If total blast exceeds this, exits with code 1.</td>
+            </tr>
+            <tr>
+              <td><code>--max-score</code></td>
+              <td>int</td>
+              <td><code>0</code></td>
+              <td>Maximum allowed weighted blast score. If total score exceeds this, exits with code 1.</td>
+            </tr>
+            <tr>
+              <td><code>--silent, -s</code></td>
+              <td>bool</td>
+              <td><code>false</code></td>
+              <td>Suppress stdout; exit 1 on policy violation (ideal for silent CI gates).</td>
+            </tr>
+            <tr>
+              <td><code>--rule-config</code></td>
+              <td>string</td>
+              <td><code>""</code></td>
+              <td>Path to custom policy rule configuration file (defaults to <code>.tf-blast.yaml</code>).</td>
+            </tr>
+            <tr>
+              <td><code>--redact-sensitive</code></td>
+              <td>bool</td>
+              <td><code>true</code></td>
+              <td>Automatically sanitize and redact passwords, private keys, and tokens from plan output.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Stdin Piping</h3>
+      <p>Stream JSON plans directly from Terraform without writing intermediate unencrypted files to disk:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">Terminal Stdin Streaming</span>
+          <button class="copy-btn" data-target="cmd-piping">Copy</button>
+        </div>
+        <pre><code id="cmd-piping">terraform show -json tfplan.binary | tf-blast analyze -</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Plan Diffing</h3>
+      <p>Quantify risk changes between iterations of a pull request:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">Differential Analysis</span>
+          <button class="copy-btn" data-target="cmd-diff">Copy</button>
+        </div>
+        <pre><code id="cmd-diff"># Compare baseline plan against refactored plan
+tf-blast diff plan_before.json plan_after.json
+
+# Export diff as machine-readable JSON
+tf-blast diff --output json plan_before.json plan_after.json > diff.json</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docker Usage Section -->
+  <section class="doc-section" id="docker">
+    <div class="container">
+      <div class="section-tag">Container Execution</div>
+      <h2 class="section-heading">Using tf-blast via Docker</h2>
+      <p class="section-desc">
+        Run tf-blast in clean, isolated environments without installing Go or local binaries. Multi-arch images (linux/amd64 and linux/arm64) are hosted on GitHub Container Registry (GHCR).
+      </p>
+
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">Pull Container Image</span>
+          <button class="copy-btn" data-target="cmd-docker-pull">Copy</button>
+        </div>
+        <pre><code id="cmd-docker-pull">docker pull ghcr.io/smford/tf-blast:latest</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Volume Mount Execution</h3>
+      <p>Mount your current workspace directory into <code>/workspace</code> inside the container:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">Volume Mount</span>
+          <button class="copy-btn" data-target="cmd-docker-mount">Copy</button>
+        </div>
+        <pre><code id="cmd-docker-mount">docker run --rm \
+  -v "$(pwd):/workspace" \
+  -w /workspace \
+  ghcr.io/smford/tf-blast:latest \
+  analyze tfplan.json</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Streaming Stdin into Docker</h3>
+      <p>Pipe Terraform plan JSON straight through standard input without saving files:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">Docker Stdin Stream</span>
+          <button class="copy-btn" data-target="cmd-docker-stdin">Copy</button>
+        </div>
+        <pre><code id="cmd-docker-stdin">terraform show -json tfplan.binary | docker run -i --rm ghcr.io/smford/tf-blast:latest analyze -</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Generating Reports with Docker</h3>
+      <p>Output standalone HTML reports or OASIS SARIF files directly to your host directory:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">Docker HTML Export</span>
+          <button class="copy-btn" data-target="cmd-docker-html">Copy</button>
+        </div>
+        <pre><code id="cmd-docker-html">docker run --rm \
+  -v "$(pwd):/workspace" \
+  -w /workspace \
+  ghcr.io/smford/tf-blast:latest \
+  analyze --output html --out-file /workspace/report.html tfplan.json</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Supply Chain Security: Cosign Verification</h3>
+      <p>All official tf-blast container images are cryptographically signed using Sigstore Cosign with GitHub OIDC keyless signing:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">Cosign Image Verification</span>
+          <button class="copy-btn" data-target="cmd-cosign">Copy</button>
+        </div>
+        <pre><code id="cmd-cosign">cosign verify ghcr.io/smford/tf-blast:latest \
+  --certificate-identity-regexp="https://github.com/smford/tf-blast/.github/workflows/release.yml@" \
+  --certificate-oidc-issuer="https://token.actions.githubusercontent.com"</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- GitHub Action Section -->
+  <section class="doc-section" id="github-action">
+    <div class="container">
+      <div class="section-tag">Continuous Integration</div>
+      <h2 class="section-heading">GitHub Action Integration</h2>
+      <p class="section-desc">
+        Embed blast radius guardrails into your pull request workflows. Uses pre-compiled binaries for sub-second execution with graceful fallback.
+      </p>
+
+      <div class="callout">
+        <strong>Pre-Compiled Binary Acceleration:</strong> The <code>smford/tf-blast@v1</code> action automatically fetches optimized binaries for the runner architecture from GitHub Releases, completing in under 1 second.
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Example 1: Pull Request Markdown Comment</h3>
+      <p>Automatically post an expandable blast radius report directly to the pull request:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">.github/workflows/pr-blast.yml</span>
+          <button class="copy-btn" data-target="action-ex-1">Copy</button>
+        </div>
+        <pre><code id="action-ex-1">name: "Terraform Blast Analysis"
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  blast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Plan
+        run: |
+          terraform init
+          terraform plan -out=tfplan.binary
+          terraform show -json tfplan.binary > tfplan.json
+
+      - name: Analyze Blast Radius
+        uses: smford/tf-blast@v1
+        with:
+          plan-file: "tfplan.json"
+          post-comment: "true"
+          github-token: ${{ secrets.GITHUB_TOKEN }}</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Example 2: Strict CI Policy Gate</h3>
+      <p>Block merging pull requests that destroy stateful databases, trigger replacements, or exceed score thresholds:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">.github/workflows/ci-gate.yml</span>
+          <button class="copy-btn" data-target="action-ex-2">Copy</button>
+        </div>
+        <pre><code id="action-ex-2">      - name: Enforce Blast Gate
+        uses: smford/tf-blast@v1
+        with:
+          plan-file: "tfplan.json"
+          fail-on: "critical,replace"
+          max-score: 50
+          post-comment: "true"
+          github-token: ${{ secrets.GITHUB_TOKEN }}</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Example 3: Inline PR Annotations (SARIF Code Scanning)</h3>
+      <p>Upload findings directly into GitHub Security Code Scanning to highlight breaking lines in the pull request diff:</p>
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">.github/workflows/security-scan.yml</span>
+          <button class="copy-btn" data-target="action-ex-3">Copy</button>
+        </div>
+        <pre><code id="action-ex-3">permissions:
+  security-events: write
+  contents: read
+
+steps:
+  - name: Analyze & Export SARIF
+    uses: smford/tf-blast@v1
+    with:
+      plan-file: "tfplan.json"
+      sarif: "true"
+      sarif-file: "tf-blast.sarif"
+
+  - name: Upload to GitHub Code Scanning
+    uses: github/codeql-action/upload-sarif@v3
+    if: always()
+    with:
+      sarif_file: "tf-blast.sarif"
+      category: "tf-blast"</code></pre>
+      </div>
+
+      <h3 style="margin: 2rem 0 0.5rem;">Action Inputs Reference</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Input</th>
+              <th>Required</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>plan-file</code></td>
+              <td>Yes</td>
+              <td><code>"tfplan.json"</code></td>
+              <td>Path to Terraform JSON plan file (or multiple space-separated files).</td>
+            </tr>
+            <tr>
+              <td><code>fail-on</code></td>
+              <td>No</td>
+              <td><code>""</code></td>
+              <td>Violation thresholds (e.g. <code>critical</code>, <code>replace</code>, <code>high</code>).</td>
+            </tr>
+            <tr>
+              <td><code>max-blast</code></td>
+              <td>No</td>
+              <td><code>0</code></td>
+              <td>Maximum allowed blast radius count before exiting with failure.</td>
+            </tr>
+            <tr>
+              <td><code>max-score</code></td>
+              <td>No</td>
+              <td><code>0</code></td>
+              <td>Maximum allowed weighted blast score before exiting with failure.</td>
+            </tr>
+            <tr>
+              <td><code>post-comment</code></td>
+              <td>No</td>
+              <td><code>"false"</code></td>
+              <td>Post or update a sticky Markdown summary on the PR.</td>
+            </tr>
+            <tr>
+              <td><code>comment-tag</code></td>
+              <td>No</td>
+              <td><code>"tf-blast-report"</code></td>
+              <td>Unique identifier tag to update existing PR comments cleanly.</td>
+            </tr>
+            <tr>
+              <td><code>sarif</code></td>
+              <td>No</td>
+              <td><code>"false"</code></td>
+              <td>Generate an OASIS SARIF report for GitHub Code Scanning.</td>
+            </tr>
+            <tr>
+              <td><code>github-token</code></td>
+              <td>No</td>
+              <td><code>${{ github.token }}</code></td>
+              <td>GitHub token for commenting and release binary fetching.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Output Formats Showcase -->
+  <section class="doc-section" id="reports">
+    <div class="container">
+      <div class="section-tag">Comprehensive Reporting</div>
+      <h2 class="section-heading">Multi-Format Visual Reports</h2>
+      <p class="section-desc">
+        tf-blast renders risk data for developers, security teams, and automated CI pipelines.
+      </p>
+
+      <div class="install-tabs" style="border-radius: 8px 8px 0 0;">
+        <button class="install-tab showcase-tab active" data-showcase="tab-terminal">Terminal Tree</button>
+        <button class="install-tab showcase-tab" data-showcase="tab-html">HTML Report</button>
+        <button class="install-tab showcase-tab" data-showcase="tab-markdown">Markdown PR</button>
+        <button class="install-tab showcase-tab" data-showcase="tab-mermaid">Mermaid Diagram</button>
+        <button class="install-tab showcase-tab" data-showcase="tab-sarif">OASIS SARIF</button>
+      </div>
+
+      <!-- Panel: Terminal -->
+      <div class="code-window showcase-panel" id="tab-terminal" style="margin-top: 0; border-radius: 0 0 10px 10px;">
+        <div class="code-header">
+          <span class="code-title">Terminal Tree Output</span>
+          <button class="copy-btn" data-target="code-sample-term">Copy</button>
+        </div>
+        <pre><code id="code-sample-term">================================================================================
+TF-BLAST: TERRAFORM BLAST RADIUS ANALYSIS
+================================================================================
+PLAN HEALTH: MODERATE BLAST RADIUS DETECTED (Risk Score: 38)
+RESOURCES TO CHANGE: 3 (1 delete, 1 replace, 1 update)
+DOWNSTREAM BLAST RADIUS: 4 dependent resources affected
+
+SUMMARY METRICS:
++ Total Blast Radius: 7
++ Blast Score: 38
++ Critical: 1 | High: 2 | Medium: 1 | Low: 3
++ Stateful Deletions: 1
++ Disruptive Replacements: 1
++ Out-of-Band Drift Detected: 1
+
+CASCADING BLAST IMPACT:
+[CRITICAL] aws_db_instance.primary (replace, risk score: 32)
+   --> Drift detected: engine_version changed out-of-band
+   +-- [HIGH] aws_route53_record.db (modify)
+   +-- [HIGH] aws_ecs_service.api (modify)
+   |   +-- [LOW] aws_appautoscaling_target.api (no-op)
+   +-- [MEDIUM] aws_cloudwatch_metric_alarm.db (modify)</code></pre>
+      </div>
+
+      <!-- Panel: HTML -->
+      <div class="code-window showcase-panel" id="tab-html" style="display: none; margin-top: 0; border-radius: 0 0 10px 10px;">
+        <div class="code-header">
+          <span class="code-title">Generate HTML Audit Report</span>
+          <button class="copy-btn" data-target="code-sample-html">Copy</button>
+        </div>
+        <pre><code id="code-sample-html"># Generate standalone HTML audit report
+tf-blast analyze --output html --out-file report.html tfplan.json
+
+# Features of the HTML Report:
+# - Zero external dependencies (no internet connection required to view)
+# - Responsive layout with built-in Light & Dark mode support
+# - Real-time client-side search across resources, types, and actions
+# - Severity filters (CRITICAL, HIGH, MEDIUM, LOW)
+# - Interactive cascading impact trees with upstream / downstream paths</code></pre>
+      </div>
+
+      <!-- Panel: Markdown -->
+      <div class="code-window showcase-panel" id="tab-markdown" style="display: none; margin-top: 0; border-radius: 0 0 10px 10px;">
+        <div class="code-header">
+          <span class="code-title">GitHub PR Markdown Comment</span>
+          <button class="copy-btn" data-target="code-sample-md">Copy</button>
+        </div>
+        <pre><code id="code-sample-md">### Terraform Blast Radius Report
+> **PLAN HEALTH: MODERATE BLAST RADIUS DETECTED** (Blast Score: 38)
+
+| Metric | Value | Status |
+| :--- | :--- | :--- |
+| **Total Blast Radius** | `7 resources` | `WARNING` |
+| **Destructive Replacements** | `1 resource` | `CRITICAL` |
+| **Out-of-Band Drift** | `1 resource` | `WARNING` |
+
+&lt;details&gt;
+&lt;summary&gt;&lt;b&gt;Critical Severity Resources (1)&lt;/b&gt;&lt;/summary&gt;
+
+- **`aws_db_instance.primary`** (`replace`, score: 32)
+  - *Drift*: `engine_version` changed in state
+  - *Cascades to*: `aws_route53_record.db`, `aws_ecs_service.api`
+&lt;/details&gt;</code></pre>
+      </div>
+
+      <!-- Panel: Mermaid -->
+      <div class="code-window showcase-panel" id="tab-mermaid" style="display: none; margin-top: 0; border-radius: 0 0 10px 10px;">
+        <div class="code-header">
+          <span class="code-title">Mermaid.js Flowchart Graph</span>
+          <button class="copy-btn" data-target="code-sample-mermaid">Copy</button>
+        </div>
+        <pre><code id="code-sample-mermaid">flowchart TD
+  subgraph Changes ["Plan Modifications"]
+    aws_db_instance_primary["aws_db_instance.primary [REPLACE]"]:::critical
+  end
+  subgraph CascadingImpact ["Downstream Blast Radius"]
+    aws_route53_record_db["aws_route53_record.db [MODIFY]"]:::high
+    aws_ecs_service_api["aws_ecs_service.api [MODIFY]"]:::high
+  end
+  aws_db_instance_primary --> aws_route53_record_db
+  aws_db_instance_primary --> aws_ecs_service_api
+
+  classDef critical fill:#ef4444,stroke:#7f1d1d,color:#fff;
+  classDef high fill:#f97316,stroke:#7c2d12,color:#fff;</code></pre>
+      </div>
+
+      <!-- Panel: SARIF -->
+      <div class="code-window showcase-panel" id="tab-sarif" style="display: none; margin-top: 0; border-radius: 0 0 10px 10px;">
+        <div class="code-header">
+          <span class="code-title">OASIS SARIF 2.1.0 (Code Scanning)</span>
+          <button class="copy-btn" data-target="code-sample-sarif">Copy</button>
+        </div>
+        <pre><code id="code-sample-sarif">{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "tf-blast",
+          "rules": [
+            { "id": "BLAST-001", "name": "CriticalDestructiveChange", "defaultConfiguration": { "level": "error" } }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "BLAST-001",
+          "level": "error",
+          "message": { "text": "aws_db_instance.primary requires destructive replacement affecting 4 downstream resources." }
+        }
+      ]
+    }
+  ]
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Configuration Section -->
+  <section class="doc-section" id="config">
+    <div class="container">
+      <div class="section-tag">Custom Policies</div>
+      <h2 class="section-heading">Configuration & Policy Rules</h2>
+      <p class="section-desc">
+        Customize risk classifications, blast radius scoring rules, and CI gates via <code>.tf-blast.yaml</code> with full IDE auto-completion.
+      </p>
+
+      <div class="code-window">
+        <div class="code-header">
+          <span class="code-title">.tf-blast.yaml (with official JSON Schema)</span>
+          <button class="copy-btn" data-target="code-sample-config">Copy</button>
+        </div>
+        <pre><code id="code-sample-config"># yaml-language-server: $schema=https://raw.githubusercontent.com/smford/tf-blast/main/schema/tf-blast.schema.json
+
+# Policy threshold enforcement
+fail_on:
+  - critical
+  - replace
+max_blast: 15
+max_score: 50
+
+# Custom severity categorization rules
+rules:
+  - pattern: "aws_db_instance\\..*"
+    severity: critical
+    reason: "Production database changes risk data loss or connection drops"
+
+  - pattern: "aws_route53_record\\..*"
+    severity: high
+    reason: "DNS modifications can redirect live customer traffic"
+
+  - pattern: "aws_security_group\\..*"
+    severity: high
+    reason: "Firewall changes may isolate services or expose internal ports"
+
+# Exclude non-impactful resources from blast counting
+ignore_resources:
+  - "random_id\\..*"
+  - "null_resource\\..*"
+  - "time_sleep\\..*"</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Releases & Downloads Section -->
+  <section class="doc-section" id="releases">
+    <div class="container">
+      <div class="section-tag">Downloads</div>
+      <h2 class="section-heading">Releases & Binaries</h2>
+      <p class="section-desc">
+        Download pre-compiled, self-contained binaries for Linux, macOS, and Windows.
+      </p>
+
+      <div class="release-card">
+        <div class="release-header">
+          <div>
+            <h3>Latest Release: <span data-version>v1.0.0</span></h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Released: <span data-release-date>Sep 20, 2026</span></p>
+          </div>
+          <div>
+            <a href="https://github.com/smford/tf-blast/releases" class="btn-primary" data-release-url target="_blank" rel="noopener">
+              View on GitHub Releases
+            </a>
+          </div>
+        </div>
+
+        <div class="downloads-grid">
+          <a href="https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_linux_amd64.tar.gz" class="download-link" data-download="linux-amd64">
+            <span>Linux (x86_64 / amd64)</span>
+            <span>.tar.gz</span>
+          </a>
+          <a href="https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_linux_arm64.tar.gz" class="download-link" data-download="linux-arm64">
+            <span>Linux (ARM64 / aarch64)</span>
+            <span>.tar.gz</span>
+          </a>
+          <a href="https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_darwin_arm64.tar.gz" class="download-link" data-download="darwin-arm64">
+            <span>macOS Apple Silicon (ARM64)</span>
+            <span>.tar.gz</span>
+          </a>
+          <a href="https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_darwin_amd64.tar.gz" class="download-link" data-download="darwin-amd64">
+            <span>macOS Intel (x86_64)</span>
+            <span>.tar.gz</span>
+          </a>
+          <a href="https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_windows_amd64.zip" class="download-link" data-download="windows-amd64">
+            <span>Windows (x86_64)</span>
+            <span>.zip</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#" class="brand">
+            <div class="brand-icon">
+              <img src="assets/logo.svg" alt="tf-blast icon" width="36" height="36">
+            </div>
+            <span class="brand-title">tf-blast</span>
+          </a>
+          <p>
+            Instant, dependency-aware blast radius and risk intelligence for Terraform and OpenTofu plans.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Documentation</h4>
+          <ul>
+            <li><a href="#quickstart">Quick Start</a></li>
+            <li><a href="#cli">CLI Reference</a></li>
+            <li><a href="#docker">Docker Guide</a></li>
+            <li><a href="#github-action">GitHub Action</a></li>
+            <li><a href="#reports">Visual Reports</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Project</h4>
+          <ul>
+            <li><a href="https://github.com/smford/tf-blast" target="_blank" rel="noopener">GitHub Repository</a></li>
+            <li><a href="https://github.com/smford/tf-blast/releases" target="_blank" rel="noopener">Release Notes</a></li>
+            <li><a href="https://github.com/smford/tf-blast/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
+            <li><a href="https://github.com/smford/tf-blast/security" target="_blank" rel="noopener">Security Policy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Integration</h4>
+          <ul>
+            <li><a href="https://github.com/marketplace/actions/tf-blast" target="_blank" rel="noopener">GitHub Marketplace</a></li>
+            <li><a href="https://ghcr.io/smford/tf-blast" target="_blank" rel="noopener">Container Registry</a></li>
+            <li><a href="schema/tf-blast.schema.json" target="_blank">JSON Schema</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          Released under the MIT License. Built with zero external telemetry.
+        </div>
+        <div>
+          Latest Release: <strong data-version>v1.0.0</strong>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

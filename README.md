@@ -1,8 +1,13 @@
-# tf-blast
-
-**Ultra-fast, zero-trust, graph-aware blast-radius analyzer for Terraform and OpenTofu execution plans.**
-
-Instead of dumping thousands of lines of raw plan diffs, `tf-blast` parses the plan's underlying dependency graph and resource changes, calculates the cascading blast radius of destructive modifications, and outputs both an interactive terminal report and a GitHub/GitLab-ready Markdown summary for pull requests.
+<div align="center">
+  <img src="docs/assets/logo.svg" alt="tf-blast logo" width="120" height="120">
+  <h1>tf-blast</h1>
+  <p><strong>Ultra-fast, zero-trust, graph-aware blast-radius analyzer for Terraform and OpenTofu execution plans.</strong></p>
+  <p>
+    <a href="https://smford.github.io/tf-blast/"><strong>Documentation & Guides</strong></a> •
+    <a href="https://github.com/smford/tf-blast/releases">Releases</a> •
+    <a href="https://github.com/marketplace/actions/tf-blast">GitHub Action</a>
+  </p>
+</div>
 
 ---
 
@@ -45,6 +50,11 @@ Instead of dumping thousands of lines of raw plan diffs, `tf-blast` parses the p
 ---
 
 ## Installation
+
+### Quick Install via Shell (Linux & macOS):
+```bash
+curl -sSL https://raw.githubusercontent.com/smford/tf-blast/main/install.sh | bash
+```
 
 ### Homebrew:
 ```bash
