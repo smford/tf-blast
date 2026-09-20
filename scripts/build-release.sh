@@ -46,8 +46,12 @@ for TARGET in "${TARGETS[@]}"; do
 
   if [ "$GOOS" = "windows" ]; then
     (cd "$TMP_BUILD_DIR" && zip -q -r "../${ARCHIVE_NAME}.zip" ./*)
+    cp "${DIST_DIR}/${ARCHIVE_NAME}.zip" "${DIST_DIR}/tf-blast_${GOOS}_${GOARCH}.zip"
+    cp "${DIST_DIR}/${ARCHIVE_NAME}.zip" "${DIST_DIR}/tf-blast-${GOOS}-${GOARCH}.zip"
   else
     tar -czf "${DIST_DIR}/${ARCHIVE_NAME}.tar.gz" -C "$TMP_BUILD_DIR" .
+    cp "${DIST_DIR}/${ARCHIVE_NAME}.tar.gz" "${DIST_DIR}/tf-blast_${GOOS}_${GOARCH}.tar.gz"
+    cp "${DIST_DIR}/${ARCHIVE_NAME}.tar.gz" "${DIST_DIR}/tf-blast-${GOOS}-${GOARCH}.tar.gz"
   fi
 
   rm -rf "$TMP_BUILD_DIR"

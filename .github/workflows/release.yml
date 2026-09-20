@@ -10,6 +10,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "*.go"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -98,21 +99,27 @@ jobs:
           VERSION_NUM: ${{ steps.semver.outputs.version_number }}
         run: |
           mkdir -p docs
-          cat <<EOF > docs/version.json
-{
-  "version": "${VERSION}",
-  "version_number": "${VERSION_NUM}",
-  "released_at": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
-  "release_url": "https://github.com/${{ github.repository }}/releases/tag/${VERSION}",
-  "assets": {
-    "linux_amd64": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tf-blast_${VERSION_NUM}_linux_amd64.tar.gz",
-    "linux_arm64": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tf-blast_${VERSION_NUM}_linux_arm64.tar.gz",
-    "darwin_amd64": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tf-blast_${VERSION_NUM}_darwin_amd64.tar.gz",
-    "darwin_arm64": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tf-blast_${VERSION_NUM}_darwin_arm64.tar.gz",
-    "windows_amd64": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tf-blast_${VERSION_NUM}_windows_amd64.zip"
-  }
-}
-EOF
+          python3 -c "
+          import os, json, datetime
+          v = os.environ['VERSION']
+          v_num = os.environ['VERSION_NUM']
+          repo = '${{ github.repository }}'
+          data = {
+              'version': v,
+              'version_number': v_num,
+              'released_at': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'release_url': f'https://github.com/{repo}/releases/tag/{v}',
+              'assets': {
+                  'linux_amd64': f'https://github.com/{repo}/releases/download/{v}/tf-blast_{v_num}_linux_amd64.tar.gz',
+                  'linux_arm64': f'https://github.com/{repo}/releases/download/{v}/tf-blast_{v_num}_linux_arm64.tar.gz',
+                  'darwin_amd64': f'https://github.com/{repo}/releases/download/{v}/tf-blast_{v_num}_darwin_amd64.tar.gz',
+                  'darwin_arm64': f'https://github.com/{repo}/releases/download/{v}/tf-blast_{v_num}_darwin_arm64.tar.gz',
+                  'windows_amd64': f'https://github.com/{repo}/releases/download/{v}/tf-blast_{v_num}_windows_amd64.zip'
+              }
+          }
+          with open('docs/version.json', 'w') as f:
+              json.dump(data, f, indent=2)
+          "
           git add docs/version.json
           git commit -m "chore(docs): update website release version to ${VERSION} [skip ci]" || true
           git push origin main || true

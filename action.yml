@@ -78,10 +78,19 @@ runs:
         esac
 
         ACTION_REF="${{ github.action_ref }}"
+        CANDIDATE_URLS=()
         if [ -z "$ACTION_REF" ] || [ "$ACTION_REF" = "main" ]; then
-          DOWNLOAD_URL="https://github.com/smford/tf-blast/releases/latest/download/tf-blast-${OS}-${ARCH}.tar.gz"
+          CANDIDATE_URLS+=(
+            "https://github.com/smford/tf-blast/releases/latest/download/tf-blast_${OS}_${ARCH}.tar.gz"
+            "https://github.com/smford/tf-blast/releases/latest/download/tf-blast-${OS}-${ARCH}.tar.gz"
+          )
         else
-          DOWNLOAD_URL="https://github.com/smford/tf-blast/releases/download/${ACTION_REF}/tf-blast-${OS}-${ARCH}.tar.gz"
+          TAG_NO_V="${ACTION_REF#v}"
+          CANDIDATE_URLS+=(
+            "https://github.com/smford/tf-blast/releases/download/${ACTION_REF}/tf-blast_${TAG_NO_V}_${OS}_${ARCH}.tar.gz"
+            "https://github.com/smford/tf-blast/releases/download/${ACTION_REF}/tf-blast_${OS}_${ARCH}.tar.gz"
+            "https://github.com/smford/tf-blast/releases/download/${ACTION_REF}/tf-blast-${OS}-${ARCH}.tar.gz"
+          )
         fi
 
         INSTALL_DIR="/usr/local/bin"
@@ -93,14 +102,17 @@ runs:
 
         INSTALLED=false
         if command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
-          echo "Attempting pre-built binary download from ${DOWNLOAD_URL}..."
-          if curl -sSL --fail "${DOWNLOAD_URL}" -o /tmp/tf-blast.tar.gz 2>/dev/null; then
-            tar -xzf /tmp/tf-blast.tar.gz -C "$INSTALL_DIR" tf-blast 2>/dev/null || tar -xzf /tmp/tf-blast.tar.gz -C "$INSTALL_DIR"
-            chmod +x "${INSTALL_DIR}/tf-blast"
-            rm -f /tmp/tf-blast.tar.gz
-            INSTALLED=true
-            echo "Pre-built binary installed successfully."
-          fi
+          for URL in "${CANDIDATE_URLS[@]}"; do
+            echo "Attempting pre-built binary download from ${URL}..."
+            if curl -sSL --fail "${URL}" -o /tmp/tf-blast.tar.gz 2>/dev/null; then
+              tar -xzf /tmp/tf-blast.tar.gz -C "$INSTALL_DIR" tf-blast 2>/dev/null || tar -xzf /tmp/tf-blast.tar.gz -C "$INSTALL_DIR"
+              chmod +x "${INSTALL_DIR}/tf-blast"
+              rm -f /tmp/tf-blast.tar.gz
+              INSTALLED=true
+              echo "Pre-built binary installed successfully from ${URL}."
+              break
+            fi
+          done
         fi
 
         if [ "$INSTALLED" = "false" ]; then
