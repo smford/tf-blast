@@ -3,7 +3,7 @@ class TfBlast < Formula
   homepage "https://github.com/smford/tf-blast"
   url "https://github.com/smford/tf-blast/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
-  license "Apache-2.0"
+  license "AGPL-3.0-or-later"
   head "https://github.com/smford/tf-blast.git", branch: "main"
 
   depends_on "go" => :build

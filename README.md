@@ -506,4 +506,4 @@ go test -v -bench=. .
 
 ## License
 
-Apache 2.0. See [LICENSE](LICENSE) for details.
+AGPL-3.0. See [LICENSE](https://github.com/smford/tf-blast#AGPL-3.0-1-ov-file) for details.
