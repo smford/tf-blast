@@ -1,13 +1,13 @@
 {
-  "version": "v1.0.0",
-  "version_number": "1.0.0",
-  "released_at": "2026-09-20T22:10:58Z",
-  "release_url": "https://github.com/smford/tf-blast/releases/tag/v1.0.0",
+  "version": "v1.1.0",
+  "version_number": "1.1.0",
+  "released_at": "2026-09-20T22:24:10Z",
+  "release_url": "https://github.com/smford/tf-blast/releases/tag/v1.1.0",
   "assets": {
-    "linux_amd64": "https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_linux_amd64.tar.gz",
-    "linux_arm64": "https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_linux_arm64.tar.gz",
-    "darwin_amd64": "https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_darwin_amd64.tar.gz",
-    "darwin_arm64": "https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_darwin_arm64.tar.gz",
-    "windows_amd64": "https://github.com/smford/tf-blast/releases/download/v1.0.0/tf-blast_1.0.0_windows_amd64.zip"
+    "linux_amd64": "https://github.com/smford/tf-blast/releases/download/v1.1.0/tf-blast_1.1.0_linux_amd64.tar.gz",
+    "linux_arm64": "https://github.com/smford/tf-blast/releases/download/v1.1.0/tf-blast_1.1.0_linux_arm64.tar.gz",
+    "darwin_amd64": "https://github.com/smford/tf-blast/releases/download/v1.1.0/tf-blast_1.1.0_darwin_amd64.tar.gz",
+    "darwin_arm64": "https://github.com/smford/tf-blast/releases/download/v1.1.0/tf-blast_1.1.0_darwin_arm64.tar.gz",
+    "windows_amd64": "https://github.com/smford/tf-blast/releases/download/v1.1.0/tf-blast_1.1.0_windows_amd64.zip"
   }
 }
