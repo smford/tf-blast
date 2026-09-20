@@ -218,6 +218,8 @@ report and a GitHub/GitLab-ready Markdown summary for pull requests.`,
 
 	rootCmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to terraform/opentofu JSON plan file (default: stdin)")
 	rootCmd.Flags().StringVarP(&configPath, "config", "c", "", "Optional path to .tf-blast.yaml policy config")
+	rootCmd.Flags().StringVar(&configPath, "rule-config", "", "Alias for --config")
+	_ = rootCmd.Flags().MarkHidden("rule-config")
 	rootCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, markdown, json, mermaid, sarif, html")
 	rootCmd.Flags().StringVar(&outFile, "out-file", "", "Path to write output to (e.g., pr-comment.md, report.sarif, report.html)")
 	rootCmd.Flags().StringVar(&outFile, "output-file", "", "Alias for --out-file")

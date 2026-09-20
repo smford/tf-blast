@@ -389,10 +389,10 @@ tf-blast analyze --fail-on critical,replace --max-score 50 tfplan.json</code></p
               <td>Suppress stdout; exit 1 on policy violation (ideal for silent CI gates).</td>
             </tr>
             <tr>
-              <td><code>--rule-config</code></td>
+              <td><code>--config, -c</code></td>
               <td>string</td>
               <td><code>""</code></td>
-              <td>Path to custom policy rule configuration file (defaults to <code>.tf-blast.yaml</code>).</td>
+              <td>Path to custom policy configuration file (auto-detects <code>.tf-blast.yaml</code>).</td>
             </tr>
             <tr>
               <td><code>--redact-sensitive</code></td>
@@ -820,33 +820,43 @@ tf-blast analyze --output html --out-file report.html tfplan.json
           <button class="copy-btn" data-target="code-sample-config">Copy</button>
         </div>
         <pre><code id="code-sample-config"># yaml-language-server: $schema=https://raw.githubusercontent.com/smford/tf-blast/main/schema/tf-blast.schema.json
+$schema: "https://raw.githubusercontent.com/smford/tf-blast/main/schema/tf-blast.schema.json"
 
-# Policy threshold enforcement
-fail_on:
-  - critical
-  - replace
+# CI policy threshold enforcement
+fail_on: "critical"
 max_blast: 15
 max_score: 50
 
-# Custom severity categorization rules
+# Custom severity categorization rules (overrides default heuristic tiers)
 rules:
-  - pattern: "aws_db_instance\\..*"
-    severity: critical
-    reason: "Production database changes risk data loss or connection drops"
+  critical:
+    - "*rds*"
+    - "*database*"
+    - "*dynamodb*"
+    - "*s3_bucket*"
+    - "*persistent_volume*"
+    - "*blob*"
+  high:
+    - "*security_group*"
+    - "*route_table*"
+    - "*iam_role*"
+    - "*firewall*"
+    - "*policy*"
+  medium:
+    - "*instance*"
+    - "*ecs_service*"
+    - "*alb*"
+    - "*kubernetes_deployment*"
+  low:
+    - "*tag*"
+    - "*log_group*"
+    - "*alert*"
 
-  - pattern: "aws_route53_record\\..*"
-    severity: high
-    reason: "DNS modifications can redirect live customer traffic"
-
-  - pattern: "aws_security_group\\..*"
-    severity: high
-    reason: "Firewall changes may isolate services or expose internal ports"
-
-# Exclude non-impactful resources from blast counting
+# Exclude specific resource addresses or types from blast counting
 ignore_resources:
-  - "random_id\\..*"
-  - "null_resource\\..*"
-  - "time_sleep\\..*"</code></pre>
+  - "*null_resource*"
+  - "*random_id*"
+  - "*time_sleep*"</code></pre>
       </div>
     </div>
   </section>
