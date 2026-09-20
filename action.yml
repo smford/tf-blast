@@ -29,6 +29,10 @@ inputs:
     description: "Optional path to write SARIF 2.1.0 report for GitHub Code Scanning"
     required: false
     default: ""
+  upload-sarif:
+    description: "Whether to automatically upload SARIF report to GitHub Code Scanning"
+    required: false
+    default: "false"
   post-pr-comment:
     description: "Whether to automatically post or update a PR comment with the analysis"
     required: false
@@ -130,6 +134,12 @@ runs:
               body: fullBody,
             });
           }
+
+    - name: Upload SARIF to GitHub Code Scanning
+      if: inputs.upload-sarif == 'true' && inputs.sarif-file != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
 
     - name: Enforce Policy Gates
       shell: bash
