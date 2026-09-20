@@ -73,7 +73,7 @@ runs:
       id: run-tf-blast
       shell: bash
       run: |
-        CMD_ARGS=(--file "${{ inputs.plan-file }}" --output markdown --out-file "${{ inputs.out-file }}")
+        CMD_ARGS=(--output markdown --out-file "${{ inputs.out-file }}")
 
         if [ -n "${{ inputs.fail-on }}" ]; then
           CMD_ARGS+=(--fail-on "${{ inputs.fail-on }}")
@@ -86,12 +86,12 @@ runs:
         fi
 
         set +e
-        tf-blast "${CMD_ARGS[@]}"
+        tf-blast "${CMD_ARGS[@]}" ${{ inputs.plan-file }}
         EXIT_CODE=$?
         set -e
 
         if [ -n "${{ inputs.sarif-file }}" ]; then
-          tf-blast --file "${{ inputs.plan-file }}" --output sarif --out-file "${{ inputs.sarif-file }}" -s || true
+          tf-blast --output sarif --out-file "${{ inputs.sarif-file }}" -s ${{ inputs.plan-file }} || true
         fi
 
         echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"

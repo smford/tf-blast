@@ -263,7 +263,9 @@ ignore_resources:
 
 ## GitHub Action
 
-You can run `tf-blast` directly as a GitHub Action on pull requests, post automated PR comments, and upload SARIF annotations to GitHub Code Scanning:
+The official `tf-blast` GitHub Action (`smford/tf-blast@v1`) provides automated blast-radius analysis directly in pull requests, with sticky PR comments and inline SARIF code scanning annotations.
+
+For complete recipes, Terragrunt multi-stack workflows, and troubleshooting, see the [GitHub Action Documentation](docs/github-action.md).
 
 ```yaml
 name: "Blast Radius Check"
@@ -297,13 +299,30 @@ jobs:
           max-blast: 25
           post-pr-comment: "true"
           sarif-file: tf-blast.sarif
-
-      - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: tf-blast.sarif
+          upload-sarif: "true"
 ```
+
+### Action Inputs
+
+| Input | Description | Required | Default |
+| :--- | :--- | :--- | :--- |
+| `plan-file` | Path to Terraform/OpenTofu JSON plan file(s). Supports a single plan (`plan.json`) or space-separated multiple plans for Terragrunt (`vpc/plan.json db/plan.json`). | **Yes** | - |
+| `fail-on` | Failure threshold (`critical`, `high`, `replacement`, `any-destroy`). Causes action step to exit with code 1. | No | `""` (disabled) |
+| `max-blast` | Maximum acceptable blast radius before failing. | No | `0` (disabled) |
+| `config` | Path to custom `.tf-blast.yaml` policy configuration. | No | Auto-detect |
+| `out-file` | Path to write the Markdown report summary to. | No | `pr-comment.md` |
+| `sarif-file` | Path to write OASIS SARIF 2.1.0 diagnostics report for GitHub Code Scanning. | No | `""` |
+| `upload-sarif` | Automatically upload SARIF report to GitHub Code Scanning via CodeQL action. | No | `"false"` |
+| `post-pr-comment` | Whether to automatically post or update an existing sticky PR comment with the analysis. | No | `"true"` |
+| `github-token` | GitHub token for posting PR comments. | No | `${{ github.token }}` |
+
+### Action Outputs
+
+| Output | Description |
+| :--- | :--- |
+| `report-file` | Path to the generated Markdown report file (`pr-comment.md`). |
+| `sarif-file` | Path to the generated SARIF 2.1.0 report file (if `sarif-file` was specified). |
+| `exit-code` | Exit code of the execution (`0` = passed, `1` = policy violation). |
 
 ---
 
