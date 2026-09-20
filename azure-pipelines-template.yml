@@ -1,0 +1,40 @@
+# tf-blast Azure DevOps Pipeline Template
+# Include this template to analyze Terraform / OpenTofu blast radius on Pull Requests
+
+parameters:
+  - name: planFile
+    type: string
+    default: 'plan.json'
+  - name: failOn
+    type: string
+    default: 'critical'
+  - name: maxBlast
+    type: number
+    default: 25
+
+steps:
+  - task: GoTool@0
+    inputs:
+      version: '1.24'
+    displayName: 'Install Go'
+
+  - script: |
+      go install github.com/smford/tf-blast/cmd/tf-blast@latest
+    displayName: 'Install tf-blast'
+
+  - script: |
+      tf-blast \
+        --file ${{ parameters.planFile }} \
+        --output markdown \
+        --out-file $(Build.ArtifactStagingDirectory)/tf-blast-report.md \
+        --fail-on ${{ parameters.failOn }} \
+        --max-blast ${{ parameters.maxBlast }}
+    displayName: 'Run tf-blast Analysis'
+
+  - task: PublishBuildArtifacts@1
+    condition: always()
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/tf-blast-report.md'
+      ArtifactName: 'blast-radius-report'
+      publishLocation: 'Container'
+    displayName: 'Publish Blast Radius Report'

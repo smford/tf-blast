@@ -1,0 +1,13 @@
+.git
+.github
+.gitignore
+.dockerignore
+.gitlab-ci-template.yml
+.pre-commit-hooks.yaml
+azure-pipelines-template.yml
+Formula/
+testdata/
+*.md
+*.png
+dist/
+bin/

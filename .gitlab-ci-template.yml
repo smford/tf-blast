@@ -1,0 +1,30 @@
+# tf-blast GitLab CI Template
+# Include this template in your .gitlab-ci.yml to analyze blast radius on Merge Requests
+
+.tf-blast:
+  image: golang:1.24-alpine
+  stage: test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  before_script:
+    - apk add --no-cache curl git jq
+    - go install github.com/smford/tf-blast/cmd/tf-blast@latest
+  script:
+    - tf-blast --file ${PLAN_JSON:-plan.json} --output markdown --out-file tf-blast-report.md --fail-on ${FAIL_ON:-critical}
+  artifacts:
+    reports:
+      dotenv: tf-blast.env
+    paths:
+      - tf-blast-report.md
+    expire_in: 7 days
+
+tf-blast:mr-comment:
+  extends: .tf-blast
+  after_script:
+    - |
+      if [ -f tf-blast-report.md ] && [ -n "$CI_MERGE_REQUEST_IID" ] && [ -n "$GITLAB_TOKEN" ]; then
+        curl --silent --request POST \
+          --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+          --form "body=$(cat tf-blast-report.md)" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes"
+      fi

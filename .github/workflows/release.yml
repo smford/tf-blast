@@ -1,0 +1,127 @@
+name: "Release & Publish"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "cmd/**"
+      - "pkg/**"
+      - "go.mod"
+      - "go.sum"
+      - "*.go"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: "Semantic Version & Release"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Run Test Suite
+        run: |
+          go test -v ./...
+
+      - name: Calculate Semantic Version
+        id: semver
+        run: |
+          chmod +x scripts/bump-version.sh
+          ./scripts/bump-version.sh
+
+      - name: Check If Code Changes Require Release
+        if: steps.semver.outputs.is_new_version != 'true'
+        run: |
+          echo "No code changes detected in cmd/, pkg/, or go dependencies since last release. Skipping release."
+
+      - name: Configure Git User
+        if: steps.semver.outputs.is_new_version == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Tag Release & Update Major Tag
+        if: steps.semver.outputs.is_new_version == 'true'
+        env:
+          NEW_TAG: ${{ steps.semver.outputs.version }}
+          MAJOR_TAG: ${{ steps.semver.outputs.major_tag }}
+        run: |
+          echo "Tagging release: ${NEW_TAG}"
+          git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}"
+          git push origin "${NEW_TAG}"
+
+          if [ -n "${MAJOR_TAG}" ]; then
+            echo "Updating floating major tag: ${MAJOR_TAG}"
+            git tag -fa "${MAJOR_TAG}" -m "Update ${MAJOR_TAG} to ${NEW_TAG}"
+            git push origin "${MAJOR_TAG}" --force
+          fi
+
+      - name: Build Cross-Platform Release Assets
+        if: steps.semver.outputs.is_new_version == 'true'
+        env:
+          VERSION: ${{ steps.semver.outputs.version }}
+        run: |
+          chmod +x scripts/build-release.sh
+          ./scripts/build-release.sh "${VERSION}"
+
+      - name: Publish GitHub Release
+        if: steps.semver.outputs.is_new_version == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.semver.outputs.version }}
+        run: |
+          gh release create "${VERSION}" dist/* \
+            --title "tf-blast ${VERSION}" \
+            --generate-notes
+
+      - name: Set up QEMU
+        if: steps.semver.outputs.is_new_version == 'true'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: steps.semver.outputs.is_new_version == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: steps.semver.outputs.is_new_version == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        if: steps.semver.outputs.is_new_version == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ steps.semver.outputs.version }}
+            type=raw,value=${{ steps.semver.outputs.major_tag }}
+            type=raw,value=latest
+
+      - name: Build and Push Multi-Arch Container Image
+        if: steps.semver.outputs.is_new_version == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.semver.outputs.version }}
+

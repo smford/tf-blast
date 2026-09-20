@@ -1,0 +1,140 @@
+name: "tf-blast"
+description: "Ultra-fast, zero-trust blast radius analyzer for Terraform and OpenTofu execution plans"
+author: "smford"
+branding:
+  icon: "activity"
+  color: "orange"
+
+inputs:
+  plan-file:
+    description: "Path to the Terraform/OpenTofu JSON plan file"
+    required: true
+  fail-on:
+    description: "Failure threshold (critical, high, replacement, any-destroy)"
+    required: false
+    default: ""
+  max-blast:
+    description: "Maximum acceptable blast radius before failing (0 = disabled)"
+    required: false
+    default: "0"
+  config:
+    description: "Optional path to .tf-blast.yaml policy configuration"
+    required: false
+    default: ""
+  out-file:
+    description: "Path to write the Markdown report to"
+    required: false
+    default: "pr-comment.md"
+  sarif-file:
+    description: "Optional path to write SARIF 2.1.0 report for GitHub Code Scanning"
+    required: false
+    default: ""
+  post-pr-comment:
+    description: "Whether to automatically post or update a PR comment with the analysis"
+    required: false
+    default: "true"
+  github-token:
+    description: "GitHub token for posting PR comments"
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  report-file:
+    description: "Path to the generated Markdown report file"
+    value: ${{ inputs.out-file }}
+  sarif-file:
+    description: "Path to the generated SARIF report file"
+    value: ${{ inputs.sarif-file }}
+  exit-code:
+    description: "Exit code of the tf-blast execution (0 = pass, 1 = policy violation)"
+    value: ${{ steps.run-tf-blast.outputs.exit_code }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure tf-blast is installed
+      shell: bash
+      run: |
+        if command -v tf-blast >/dev/null 2>&1; then
+          echo "tf-blast is already installed: $(tf-blast --version)"
+          exit 0
+        fi
+
+        echo "Installing tf-blast..."
+        cd "${{ github.action_path }}"
+        go build -ldflags="-s -w" -o /usr/local/bin/tf-blast ./cmd/tf-blast
+        echo "tf-blast installed successfully: $(tf-blast --version)"
+
+    - name: Run tf-blast Analysis
+      id: run-tf-blast
+      shell: bash
+      run: |
+        CMD_ARGS=(--file "${{ inputs.plan-file }}" --output markdown --out-file "${{ inputs.out-file }}")
+
+        if [ -n "${{ inputs.fail-on }}" ]; then
+          CMD_ARGS+=(--fail-on "${{ inputs.fail-on }}")
+        fi
+        if [ "${{ inputs.max-blast }}" -gt 0 ]; then
+          CMD_ARGS+=(--max-blast "${{ inputs.max-blast }}")
+        fi
+        if [ -n "${{ inputs.config }}" ]; then
+          CMD_ARGS+=(--config "${{ inputs.config }}")
+        fi
+
+        set +e
+        tf-blast "${CMD_ARGS[@]}"
+        EXIT_CODE=$?
+        set -e
+
+        if [ -n "${{ inputs.sarif-file }}" ]; then
+          tf-blast --file "${{ inputs.plan-file }}" --output sarif --out-file "${{ inputs.sarif-file }}" -s || true
+        fi
+
+        echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+    - name: Post or Update PR Comment
+      if: inputs.post-pr-comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const commentFile = '${{ inputs.out-file }}';
+          if (!fs.existsSync(commentFile)) {
+            console.log('No comment file found, skipping PR comment.');
+            return;
+          }
+          const body = fs.readFileSync(commentFile, 'utf8');
+          const tag = '<!-- tf-blast-report -->';
+          const fullBody = `${tag}\n${body}`;
+
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const botComment = comments.find(c => c.body.includes(tag));
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: fullBody,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: fullBody,
+            });
+          }
+
+    - name: Enforce Policy Gates
+      shell: bash
+      run: |
+        if [ "${{ steps.run-tf-blast.outputs.exit_code }}" -ne 0 ]; then
+          echo "::error::tf-blast policy check failed! Review the blast radius report for details."
+          exit 1
+        fi

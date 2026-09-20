@@ -1,0 +1,7 @@
+- id: tf-blast
+  name: tf-blast
+  description: "Analyze Terraform and OpenTofu execution plans for blast radius and destructive risks"
+  entry: tf-blast
+  language: golang
+  files: '\.json$'
+  args: ["--fail-on", "critical"]

@@ -1,0 +1,134 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.8.0",
+  "resource_changes": [
+    {
+      "address": "aws_rds_cluster.primary",
+      "mode": "managed",
+      "type": "aws_rds_cluster",
+      "name": "primary",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["delete"],
+        "before": {
+          "id": "aurora-pg-cluster-prod",
+          "cluster_identifier": "aurora-pg-cluster-prod",
+          "engine": "aurora-postgresql",
+          "engine_version": "15.4"
+        },
+        "after": null
+      }
+    },
+    {
+      "address": "aws_rds_cluster_instance.instances[0]",
+      "mode": "managed",
+      "type": "aws_rds_cluster_instance",
+      "name": "instances",
+      "index": 0,
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["delete"],
+        "before": {
+          "id": "aurora-pg-instance-0",
+          "cluster_identifier": "aurora-pg-cluster-prod"
+        },
+        "after": null
+      }
+    },
+    {
+      "address": "aws_rds_cluster_instance.instances[1]",
+      "mode": "managed",
+      "type": "aws_rds_cluster_instance",
+      "name": "instances",
+      "index": 1,
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["delete"],
+        "before": {
+          "id": "aurora-pg-instance-1",
+          "cluster_identifier": "aurora-pg-cluster-prod"
+        },
+        "after": null
+      }
+    },
+    {
+      "address": "module.api.aws_ecs_service.web",
+      "module_address": "module.api",
+      "mode": "managed",
+      "type": "aws_ecs_service",
+      "name": "web",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "cluster": "prod-ecs",
+          "name": "web-api"
+        },
+        "after": {
+          "cluster": "prod-ecs",
+          "name": "web-api"
+        }
+      }
+    },
+    {
+      "address": "module.worker.aws_ecs_service.processor",
+      "module_address": "module.worker",
+      "mode": "managed",
+      "type": "aws_ecs_service",
+      "name": "processor",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "cluster": "prod-ecs",
+          "name": "processor"
+        },
+        "after": {
+          "cluster": "prod-ecs",
+          "name": "processor"
+        }
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_rds_cluster.primary",
+          "type": "aws_rds_cluster",
+          "name": "primary"
+        },
+        {
+          "address": "aws_rds_cluster_instance.instances",
+          "type": "aws_rds_cluster_instance",
+          "name": "instances",
+          "expressions": {
+            "cluster_identifier": {
+              "references": ["aws_rds_cluster.primary.id"]
+            }
+          }
+        },
+        {
+          "address": "module.api.aws_ecs_service.web",
+          "type": "aws_ecs_service",
+          "name": "web",
+          "expressions": {
+            "db_endpoint": {
+              "references": ["aws_rds_cluster.primary.id"]
+            }
+          }
+        },
+        {
+          "address": "module.worker.aws_ecs_service.processor",
+          "type": "aws_ecs_service",
+          "name": "processor",
+          "expressions": {
+            "db_endpoint": {
+              "references": ["aws_rds_cluster.primary.id"]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

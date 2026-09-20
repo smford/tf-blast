@@ -1,0 +1,108 @@
+name: "tf-blast: Blast Radius & Risk Analysis"
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+      - ".github/workflows/tf-blast.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  blast-radius-analysis:
+    name: "Analyze Blast Radius"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+
+      - name: Build tf-blast
+        run: |
+          go build -ldflags="-s -w" -o /usr/local/bin/tf-blast ./cmd/tf-blast
+
+      - name: Set up Terraform / OpenTofu
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init & Plan
+        id: plan
+        run: |
+          # Initialize terraform
+          terraform init -backend=false
+          # Generate execution plan artifact
+          terraform plan -out=tfplan.binary
+          # Convert to self-contained JSON
+          terraform show -json tfplan.binary > plan.json
+
+      - name: Run tf-blast Analysis
+        id: blast
+        run: |
+          # Run tf-blast with markdown output for PR comment and enforce critical threshold
+          set +e
+          tf-blast \
+            --file plan.json \
+            --output markdown \
+            --out-file pr-comment.md \
+            --fail-on critical \
+            --max-blast 25
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Post or Update PR Comment
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const commentFile = 'pr-comment.md';
+            if (!fs.existsSync(commentFile)) {
+              console.log('No comment file found, skipping PR comment.');
+              return;
+            }
+            const body = fs.readFileSync(commentFile, 'utf8');
+            const tag = '<!-- tf-blast-report -->';
+            const fullBody = `${tag}\n${body}`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c => c.body.includes(tag));
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: fullBody,
+              });
+            }
+
+      - name: Enforce Policy Gates
+        run: |
+          if [ "${{ steps.blast.outputs.exit_code }}" -ne 0 ]; then
+            echo "❌ tf-blast detected high/critical blast radius exceeding policy threshold!"
+            exit 1
+          fi
+          echo "✅ Blast radius checks passed successfully."
