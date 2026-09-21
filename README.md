@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/logo.svg" alt="tf-blast logo" width="120" height="120">
+  <img src="docs/assets/icon.png" alt="tf-blast logo" width="120" height="120">
   <h1>tf-blast</h1>
   <p><strong>Ultra-fast, zero-trust, graph-aware blast-radius analyzer for Terraform and OpenTofu execution plans.</strong></p>
   <p>
