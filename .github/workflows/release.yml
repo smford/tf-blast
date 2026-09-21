@@ -155,7 +155,10 @@ jobs:
             cd ..
             rm -rf tap_repo
           else
-            echo "HOMEBREW_TAP_TOKEN secret is not set. Formula uploaded to release assets and local repo."
+            echo "::error::HOMEBREW_TAP_TOKEN secret is not set or is empty."
+            echo "::error::The formula was NOT pushed to smford/homebrew-tap."
+            echo "::error::Add the HOMEBREW_TAP_TOKEN secret in GitHub repo Settings > Secrets and variables > Actions."
+            exit 1
           fi
 
       - name: Set up QEMU
