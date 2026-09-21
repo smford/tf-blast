@@ -122,7 +122,7 @@ jobs:
       - name: Generate and Publish Homebrew Formula
         if: steps.semver.outputs.is_new_version == 'true'
         env:
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           TAG_NAME: ${{ steps.semver.outputs.version }}
           VERSION: ${{ steps.semver.outputs.version_number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,7 +138,7 @@ jobs:
           git commit -m "chore(formula): update Homebrew formula to ${TAG_NAME} [skip ci]" || true
           git push origin main || true
 
-          # Publish to smford/homebrew-tap if HOMEBREW_TAP_TOKEN is configured
+          # Publish to smford/homebrew-tap if HOMEBREW_TAP_GITHUB_TOKEN is configured
           if [ -n "${TAP_TOKEN}" ]; then
             echo "Publishing updated formula to smford/homebrew-tap..."
             git clone "https://x-access-token:${TAP_TOKEN}@github.com/smford/homebrew-tap.git" tap_repo
@@ -155,9 +155,9 @@ jobs:
             cd ..
             rm -rf tap_repo
           else
-            echo "::error::HOMEBREW_TAP_TOKEN secret is not set or is empty."
+            echo "::error::HOMEBREW_TAP_GITHUB_TOKEN secret is not set or is empty."
             echo "::error::The formula was NOT pushed to smford/homebrew-tap."
-            echo "::error::Add the HOMEBREW_TAP_TOKEN secret in GitHub repo Settings > Secrets and variables > Actions."
+            echo "::error::Add the HOMEBREW_TAP_GITHUB_TOKEN secret in GitHub repo Settings > Secrets and variables > Actions."
             exit 1
           fi
 
