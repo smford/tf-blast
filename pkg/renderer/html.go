@@ -127,16 +127,28 @@ func RenderHTML(w io.Writer, report *analyzer.AnalysisReport) error {
       transition: all 0.2s;
     }
     .filter-btn.active, .filter-btn:hover { background: #3b82f6; color: #ffffff; border-color: #3b82f6; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .table-wrap {
+      width: 100%%;
+      overflow-x: auto;
       background: var(--card-bg);
-      border-radius: 8px;
-      overflow: hidden;
       border: 1px solid var(--border);
+      border-radius: 8px;
       margin-bottom: 2rem;
     }
-    th, td { padding: 0.875rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    table {
+      width: 100%%;
+      border-collapse: collapse;
+      background: transparent;
+      margin-bottom: 0;
+      border: none;
+    }
+    th, td {
+      padding: 0.875rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
     th { background: rgba(0,0,0,0.1); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
     tr:last-child td { border-bottom: none; }
     tr:hover { background: rgba(255,255,255,0.02); }
@@ -148,6 +160,7 @@ func RenderHTML(w io.Writer, report *analyzer.AnalysisReport) error {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.025em;
+      white-space: nowrap;
     }
     .badge-CRITICAL { background: #ef444422; color: #ef4444; border: 1px solid #ef4444; }
     .badge-HIGH { background: #f9731622; color: #f97316; border: 1px solid #f97316; }
@@ -186,19 +199,19 @@ func RenderHTML(w io.Writer, report *analyzer.AnalysisReport) error {
 
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-val" style="color: #10b981;">+%d</div>
+        <div class="metric-val" style="color: #10b981;">%d</div>
         <div class="metric-label">To Add</div>
       </div>
       <div class="metric-card">
-        <div class="metric-val" style="color: #eab308;">~%d</div>
+        <div class="metric-val" style="color: #eab308;">%d</div>
         <div class="metric-label">To Update</div>
       </div>
       <div class="metric-card">
-        <div class="metric-val" style="color: #ef4444;">-%d</div>
+        <div class="metric-val" style="color: #ef4444;">%d</div>
         <div class="metric-label">To Destroy</div>
       </div>
       <div class="metric-card">
-        <div class="metric-val" style="color: #d946ef;">&plusmn;%d</div>
+        <div class="metric-val" style="color: #d946ef;">%d</div>
         <div class="metric-label">To Replace</div>
       </div>
       <div class="metric-card">
@@ -220,18 +233,19 @@ func RenderHTML(w io.Writer, report *analyzer.AnalysisReport) error {
       <button class="filter-btn" onclick="filterSev('LOW')">Low</button>
     </div>
 
-    <table id="resourceTable">
-      <thead>
-        <tr>
-          <th>Severity</th>
-          <th>Resource Address</th>
-          <th>Action</th>
-          <th>Root Cause</th>
-          <th>Downstream Impact</th>
-          <th>Score</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div class="table-wrap">
+      <table id="resourceTable">
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>Resource Address</th>
+            <th>Action</th>
+            <th>Root Cause</th>
+            <th>Downstream Impact</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
 `
 
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05 UTC")
@@ -287,7 +301,8 @@ func RenderHTML(w io.Writer, report *analyzer.AnalysisReport) error {
 	}
 
 	fmt.Fprintln(w, `      </tbody>
-    </table>`)
+    </table>
+  </div>`)
 
 	// Impact Trees
 	hasTrees := false
