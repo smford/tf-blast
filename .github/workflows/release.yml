@@ -49,8 +49,8 @@ jobs:
       - name: Configure Git User
         if: steps.semver.outputs.is_new_version == 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Tag Release & Update Major Tag
         if: steps.semver.outputs.is_new_version == 'true'
@@ -122,7 +122,7 @@ jobs:
       - name: Generate and Publish Homebrew Formula
         if: steps.semver.outputs.is_new_version == 'true'
         env:
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN || secrets.HOMEBREW_TAP_TOKEN }}
           TAG_NAME: ${{ steps.semver.outputs.version }}
           VERSION: ${{ steps.semver.outputs.version_number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -145,12 +145,15 @@ jobs:
             mkdir -p tap_repo/Formula
             cp Formula/tf-blast.rb tap_repo/Formula/tf-blast.rb
             cd tap_repo
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
             git add Formula/tf-blast.rb
-            if git commit -m "feat(formula): update tf-blast to ${TAG_NAME}"; then
-              git push origin main
-              echo "Successfully pushed formula update to smford/homebrew-tap"
-            else
+            if git diff --staged --quiet; then
               echo "Formula in tap is already up to date"
+            else
+              git commit -m "feat(formula): update tf-blast to ${TAG_NAME}"
+              git push "https://x-access-token:${TAP_TOKEN}@github.com/smford/homebrew-tap.git" main
+              echo "Successfully pushed formula update to smford/homebrew-tap"
             fi
             cd ..
             rm -rf tap_repo
