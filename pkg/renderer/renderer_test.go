@@ -173,4 +173,13 @@ func TestRenderHTML(t *testing.T) {
 	if !strings.Contains(out, "Blast Score") {
 		t.Errorf("missing Blast Score in HTML output")
 	}
+	if strings.Contains(out, "%!") {
+		t.Errorf("found format error (%%!) in HTML output:\n%s", out)
+	}
+	if !strings.Contains(out, "width: 100%;") {
+		t.Errorf("expected CSS table width: 100%%, got output")
+	}
+	if !strings.Contains(out, "Plan Health: CRITICAL BLAST RADIUS DETECTED") {
+		t.Errorf("expected Plan Health banner with CRITICAL BLAST RADIUS DETECTED")
+	}
 }
