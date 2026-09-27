@@ -32,7 +32,7 @@ jobs:
           go build -ldflags="-s -w" -o /usr/local/bin/tf-blast ./cmd/tf-blast
 
       - name: Set up Terraform / OpenTofu
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_wrapper: false
 
